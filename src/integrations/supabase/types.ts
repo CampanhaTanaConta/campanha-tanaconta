@@ -224,6 +224,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_user_session: {
+        Args: { p_email: string; p_participante: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

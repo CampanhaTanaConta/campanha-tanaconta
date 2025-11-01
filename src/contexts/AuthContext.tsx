@@ -140,6 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const userIsAdmin = !!roleData;
 
+        // Set session variables in database for RLS policies
+        await supabase.rpc('set_user_session', {
+          p_email: normalizedEmail,
+          p_participante: adminUser.name
+        });
+
         // Set session for admin
         setUserEmail(normalizedEmail);
         setParticipante(adminUser.name); // Use admin name as "participante"
@@ -184,6 +190,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       const userIsAdmin = !!roleData;
+
+      // Set session variables in database for RLS policies
+      await supabase.rpc('set_user_session', {
+        p_email: normalizedEmail,
+        p_participante: participant.participante
+      });
 
       // Set session
       setUserEmail(normalizedEmail);
