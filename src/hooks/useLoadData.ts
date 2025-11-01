@@ -6,12 +6,14 @@ interface LoadDataRequest {
   participantsUrl: string;
   walletUrl: string;
   transactionsUrl: string;
+  departmentStoreUrl: string;
 }
 
 interface LoadDataResponse {
-  participantsCount: number;
-  walletCount: number;
-  transactionsCount: number;
+  participants: number;
+  wallet: number;
+  transactions: number;
+  departmentStore: number;
   errors: string[];
 }
 
@@ -35,7 +37,7 @@ export const useLoadData = () => {
       
       toast({
         title: "Dados carregados com sucesso!",
-        description: `${data.participantsCount} participantes, ${data.walletCount} clientes, ${data.transactionsCount} transações`,
+        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.departmentStore} estabelecimentos`,
       });
 
       return data;

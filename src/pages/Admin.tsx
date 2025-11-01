@@ -17,6 +17,7 @@ const Admin = () => {
   const [participantsUrl, setParticipantsUrl] = useState('');
   const [walletUrl, setWalletUrl] = useState('');
   const [transactionsUrl, setTransactionsUrl] = useState('');
+  const [departmentStoreUrl, setDepartmentStoreUrl] = useState('');
 
   useEffect(() => {
     if (!participante) {
@@ -32,6 +33,7 @@ const Admin = () => {
         setParticipantsUrl(urls.participantsUrl || '');
         setWalletUrl(urls.walletUrl || '');
         setTransactionsUrl(urls.transactionsUrl || '');
+        setDepartmentStoreUrl(urls.departmentStoreUrl || '');
       } catch (e) {
         console.error('Error loading saved URLs:', e);
       }
@@ -39,7 +41,7 @@ const Admin = () => {
   }, [participante, navigate]);
 
   const handleLoadData = async () => {
-    if (!participantsUrl || !walletUrl || !transactionsUrl) {
+    if (!participantsUrl || !walletUrl || !transactionsUrl || !departmentStoreUrl) {
       return;
     }
 
@@ -48,12 +50,14 @@ const Admin = () => {
       participantsUrl,
       walletUrl,
       transactionsUrl,
+      departmentStoreUrl,
     }));
 
     await loadData({
       participantsUrl,
       walletUrl,
       transactionsUrl,
+      departmentStoreUrl,
     });
   };
 
@@ -138,9 +142,20 @@ const Admin = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="departmentStore">Department Store (Estabelecimentos)</Label>
+                <Input
+                  id="departmentStore"
+                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                  value={departmentStoreUrl}
+                  onChange={(e) => setDepartmentStoreUrl(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+
               <Button
                 onClick={handleLoadData}
-                disabled={isLoading || !participantsUrl || !walletUrl || !transactionsUrl}
+                disabled={isLoading || !participantsUrl || !walletUrl || !transactionsUrl || !departmentStoreUrl}
                 className="w-full"
                 size="lg"
               >
@@ -169,13 +184,16 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm">
-                  <strong>Participantes:</strong> {result.participantsCount} registros
+                  <strong>Participantes:</strong> {result.participants} registros
                 </p>
                 <p className="text-sm">
-                  <strong>Carteira:</strong> {result.walletCount} registros
+                  <strong>Carteira:</strong> {result.wallet} registros
                 </p>
                 <p className="text-sm">
-                  <strong>Transações:</strong> {result.transactionsCount} registros
+                  <strong>Transações:</strong> {result.transactions} registros
+                </p>
+                <p className="text-sm">
+                  <strong>Estabelecimentos:</strong> {result.departmentStore} registros
                 </p>
                 {result.errors && result.errors.length > 0 && (
                   <Alert variant="destructive" className="mt-4">

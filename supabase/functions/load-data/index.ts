@@ -12,6 +12,7 @@ interface LoadDataRequest {
   participantsUrl?: string;
   walletUrl?: string;
   transactionsUrl?: string;
+  departmentStoreUrl?: string;
 }
 
 Deno.serve(async (req) => {
@@ -25,12 +26,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { participantsUrl, walletUrl, transactionsUrl }: LoadDataRequest = await req.json();
+    const { participantsUrl, walletUrl, transactionsUrl, departmentStoreUrl }: LoadDataRequest = await req.json();
 
     const results = {
       participants: 0,
       wallet: 0,
       transactions: 0,
+      departmentStore: 0,
       errors: [] as string[],
     };
 
@@ -155,6 +157,76 @@ Deno.serve(async (req) => {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         results.errors.push(`Transactions: ${errorMessage}`);
+      }
+    }
+
+    // Load department store data
+    if (departmentStoreUrl) {
+      try {
+        const response = await fetch(departmentStoreUrl);
+        const csvText = await response.text();
+        const records = parse(csvText, { skipFirstRow: true });
+
+        // Clear existing department store data
+        await supabaseClient.from('department_store').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        for (const record of records) {
+          const clienteId = String(record[0] || '').trim(); // ID
+          const idExterno = String(record[1] || '').trim();
+          const tipoPessoa = String(record[2] || '').trim();
+          const cpf = String(record[3] || '').trim();
+          const nome = String(record[4] || '').trim();
+          const tipo = String(record[5] || '').trim();
+          const marketplace = String(record[6] || '').trim();
+          const representante = String(record[7] || '').trim();
+          const plano = String(record[8] || '').trim();
+          const cidade = String(record[14] || '').trim();
+          const uf = String(record[15] || '').trim();
+          const cnpj = String(record[16] || '').trim();
+          const razaoSocial = String(record[17] || '').trim();
+          const email = String(record[18] || '').trim();
+          const telefone = String(record[19] || '').trim();
+          const etapa = String(record[20] || '').trim();
+          const dataCadastroStr = String(record[21] || '').trim();
+          const status = String(record[22] || '').trim();
+
+          if (!clienteId || !nome) continue;
+
+          // Parse date if available (yyyy-mm-dd hh:mm:ss format)
+          let dataCadastro = null;
+          if (dataCadastroStr) {
+            const dateMatch = dataCadastroStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (dateMatch) {
+              dataCadastro = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+            }
+          }
+
+          const { error } = await supabaseClient.from('department_store').insert({
+            cliente_id: clienteId,
+            id_externo: idExterno || null,
+            tipo_pessoa: tipoPessoa || null,
+            cpf: cpf || null,
+            nome,
+            tipo: tipo || null,
+            marketplace: marketplace || null,
+            representante: representante || null,
+            plano: plano || null,
+            cidade: cidade || null,
+            uf: uf || null,
+            cnpj: cnpj || null,
+            razao_social: razaoSocial || null,
+            email: email || null,
+            telefone: telefone || null,
+            etapa: etapa || null,
+            data_cadastro: dataCadastro,
+            status: status || null,
+          });
+
+          if (!error) results.departmentStore++;
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.errors.push(`Department Store: ${errorMessage}`);
       }
     }
 

@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart } from 'lucide-react';
+import { ActivationStats } from '@/components/ActivationStats';
+import { PendingClientsTable } from '@/components/PendingClientsTable';
+import { ActivationChart } from '@/components/ActivationChart';
 import logo from '@/assets/logo.png';
 
 interface KPIData {
@@ -13,6 +16,16 @@ interface KPIData {
   premiacao: number;
   clientesAtivos: number;
   ticketMedio: number;
+}
+
+interface ActivationData {
+  totalClients: number;
+  activatedClients: number;
+  pendingClients: number;
+  activationRate: number;
+  pendingClientsList: any[];
+  inProgressCount: number;
+  noSalesCount: number;
 }
 
 const Dashboard = () => {
@@ -24,6 +37,15 @@ const Dashboard = () => {
     premiacao: 0,
     clientesAtivos: 0,
     ticketMedio: 0,
+  });
+  const [activationData, setActivationData] = useState<ActivationData>({
+    totalClients: 0,
+    activatedClients: 0,
+    pendingClients: 0,
+    activationRate: 0,
+    pendingClientsList: [],
+    inProgressCount: 0,
+    noSalesCount: 0,
   });
 
   useEffect(() => {
@@ -60,6 +82,7 @@ const Dashboard = () => {
 
       if (transError) throw transError;
 
+      // Calculate KPIs
       if (transactions && transactions.length > 0) {
         const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
         const premiacao = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
@@ -71,6 +94,51 @@ const Dashboard = () => {
           premiacao,
           clientesAtivos,
           ticketMedio,
+        });
+      }
+
+      // Get department store data for activation tracking
+      const { data: departmentStore, error: deptError } = await supabase
+        .from('department_store')
+        .select('*')
+        .in('cliente_id', clienteIds);
+
+      if (deptError) throw deptError;
+
+      if (departmentStore && departmentStore.length > 0) {
+        // Calculate total sales per client
+        const salesByClient = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+          return acc;
+        }, {} as Record<string, number>) || {};
+
+        const activatedClients = Object.values(salesByClient).filter(total => total > 500).length;
+        const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => total > 0 && total <= 500).length;
+        const totalClients = departmentStore.length;
+        const noSalesClients = totalClients - Object.keys(salesByClient).length;
+
+        // Get pending clients details
+        const pendingClientsList = departmentStore
+          .filter(client => {
+            const totalVendas = salesByClient[client.cliente_id] || 0;
+            return totalVendas <= 500;
+          })
+          .map(client => ({
+            ...client,
+            totalVendas: salesByClient[client.cliente_id] || 0,
+          }))
+          .sort((a, b) => b.totalVendas - a.totalVendas)
+          .slice(0, 10); // Top 10 pending clients
+
+        setActivationData({
+          totalClients,
+          activatedClients,
+          pendingClients: totalClients - activatedClients,
+          activationRate: totalClients > 0 ? (activatedClients / totalClients) * 100 : 0,
+          pendingClientsList,
+          inProgressCount: inProgressClients,
+          noSalesCount: noSalesClients,
         });
       }
 
@@ -131,7 +199,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto p-6">
+      <main className="container mx-auto p-6 space-y-8">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -177,6 +245,25 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {activationData.totalClients > 0 && (
+          <>
+            <ActivationStats
+              totalClients={activationData.totalClients}
+              activatedClients={activationData.activatedClients}
+              pendingClients={activationData.pendingClients}
+              activationRate={activationData.activationRate}
+            />
+
+            <ActivationChart
+              activatedCount={activationData.activatedClients}
+              inProgressCount={activationData.inProgressCount}
+              noSalesCount={activationData.noSalesCount}
+            />
+
+            <PendingClientsTable clients={activationData.pendingClientsList} />
+          </>
+        )}
 
         {kpis.clientesAtivos === 0 && (
           <Card>

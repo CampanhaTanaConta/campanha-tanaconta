@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      department_store: {
+        Row: {
+          cidade: string | null
+          cliente_id: string
+          cnpj: string | null
+          cpf: string | null
+          created_at: string | null
+          data_cadastro: string | null
+          email: string | null
+          etapa: string | null
+          id: string
+          id_externo: string | null
+          marketplace: string | null
+          nome: string
+          plano: string | null
+          razao_social: string | null
+          representante: string | null
+          status: string | null
+          telefone: string | null
+          tipo: string | null
+          tipo_pessoa: string | null
+          uf: string | null
+        }
+        Insert: {
+          cidade?: string | null
+          cliente_id: string
+          cnpj?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_cadastro?: string | null
+          email?: string | null
+          etapa?: string | null
+          id?: string
+          id_externo?: string | null
+          marketplace?: string | null
+          nome: string
+          plano?: string | null
+          razao_social?: string | null
+          representante?: string | null
+          status?: string | null
+          telefone?: string | null
+          tipo?: string | null
+          tipo_pessoa?: string | null
+          uf?: string | null
+        }
+        Update: {
+          cidade?: string | null
+          cliente_id?: string
+          cnpj?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          data_cadastro?: string | null
+          email?: string | null
+          etapa?: string | null
+          id?: string
+          id_externo?: string | null
+          marketplace?: string | null
+          nome?: string
+          plano?: string | null
+          razao_social?: string | null
+          representante?: string | null
+          status?: string | null
+          telefone?: string | null
+          tipo?: string | null
+          tipo_pessoa?: string | null
+          uf?: string | null
+        }
+        Relationships: []
+      }
       participants: {
         Row: {
           birth_hash: string
