@@ -47,9 +47,9 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <img src={logo} alt="Logo" className="h-20 w-20" />
+            <img src={logo} alt="Logo" className="h-20 w-20 rounded-2xl" />
           </div>
-          <CardTitle className="text-2xl font-bold">Dashboard de Performance</CardTitle>
+          <CardTitle className="text-2xl font-bold">Tá na Conta e no Cartão!</CardTitle>
           <CardDescription>
             Acompanhe suas vendas e premiações da campanha
           </CardDescription>
