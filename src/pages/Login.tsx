@@ -36,7 +36,11 @@ const Login = () => {
     if (result.success) {
       navigate('/dashboard');
     } else {
-      setError(result.error || 'Erro ao fazer login');
+      if (result.error === 'not_registered') {
+        setError('not_registered');
+      } else {
+        setError(result.error || 'Erro ao fazer login');
+      }
     }
 
     setIsLoading(false);
@@ -106,7 +110,23 @@ const Login = () => {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error === 'not_registered' ? (
+                    <>
+                      E-mail não cadastrado na campanha.{' '}
+                      <a 
+                        href="https://www.cappta.com.br/campanha-intelbras" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="underline font-semibold"
+                      >
+                        Cadastre-se aqui
+                      </a>
+                    </>
+                  ) : (
+                    error
+                  )}
+                </AlertDescription>
               </Alert>
             )}
 
