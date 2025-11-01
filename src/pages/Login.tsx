@@ -19,8 +19,11 @@ const Login = () => {
   const [error, setError] = useState('');
   const [participantName, setParticipantName] = useState('');
   const [emailChecked, setEmailChecked] = useState(false);
+  const [showPasswordHint, setShowPasswordHint] = useState(false);
 
   const handlePasswordFocus = async () => {
+    setShowPasswordHint(true);
+    
     if (!email.trim() || emailChecked) return;
     
     setIsCheckingEmail(true);
@@ -125,14 +128,16 @@ const Login = () => {
                 disabled={isLoading || isCheckingEmail}
                 maxLength={8}
               />
-              <Alert className="border-primary/30 bg-primary/5">
-                <AlertCircle className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-sm">
-                  Use sua data de nascimento sem barras (ddmmaaaa).
-                  <br />
-                  Exemplo: 15/08/1990 → 15081990
-                </AlertDescription>
-              </Alert>
+              {showPasswordHint && (
+                <Alert className="border-primary/30 bg-primary/5">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-sm">
+                    Use sua data de nascimento sem barras (ddmmaaaa).
+                    <br />
+                    Exemplo: 15/08/1990 → 15081990
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
 
             {error && (
