@@ -51,7 +51,7 @@ const Login = () => {
           </div>
           <CardTitle className="text-2xl font-bold">Tá na Conta e no Cartão!</CardTitle>
           <CardDescription>
-            Acompanhe suas vendas e premiações da campanha
+            Acompanhe as ativações, vendas e sua premiação acumulada
           </CardDescription>
         </CardHeader>
         <CardContent>
