@@ -115,6 +115,23 @@ const Login = () => {
               </Alert>
             )}
 
+            {error && error === 'not_registered' && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  E-mail não cadastrado na campanha.{' '}
+                  <a 
+                    href="https://www.cappta.com.br/campanha-intelbras" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="underline font-semibold"
+                  >
+                    Cadastre-se aqui
+                  </a>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
@@ -140,25 +157,11 @@ const Login = () => {
               )}
             </div>
 
-            {error && (
+            {error && error !== 'not_registered' && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {error === 'not_registered' ? (
-                    <>
-                      E-mail não cadastrado na campanha.{' '}
-                      <a 
-                        href="https://www.cappta.com.br/campanha-intelbras" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="underline font-semibold"
-                      >
-                        Cadastre-se aqui
-                      </a>
-                    </>
-                  ) : (
-                    error
-                  )}
+                  {error}
                 </AlertDescription>
               </Alert>
             )}
