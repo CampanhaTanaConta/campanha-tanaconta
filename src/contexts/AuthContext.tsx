@@ -7,7 +7,8 @@ interface AuthContextType {
   participante: string | null;
   isAdmin: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; participante?: string }>;
+  checkEmail: (email: string) => Promise<{ exists: boolean; name: string | null; isAdmin: boolean }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; participante?: string; isAdmin?: boolean }>;
   logout: () => void;
 }
 
@@ -33,6 +34,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     setIsLoading(false);
   }, []);
+
+  const checkEmail = async (email: string) => {
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      
+      // First check if user is admin
+      const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('name')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (adminUser) {
+        return { exists: true, name: adminUser.name, isAdmin: true };
+      }
+
+      // If not admin, check if regular participant
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('participante')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (participant) {
+        return { exists: true, name: participant.participante, isAdmin: false };
+      }
+
+      return { exists: false, name: null, isAdmin: false };
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return { exists: false, name: null, isAdmin: false };
+    }
+  };
 
   const checkAdminStatus = async (email: string) => {
     try {
@@ -114,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('userEmail', normalizedEmail);
         localStorage.setItem('participante', adminUser.name);
 
-        return { success: true, participante: adminUser.name };
+        return { success: true, participante: adminUser.name, isAdmin: userIsAdmin };
       }
 
       // If not admin, check if user is a participant
@@ -159,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('userEmail', normalizedEmail);
       localStorage.setItem('participante', participant.participante);
 
-      return { success: true, participante: participant.participante };
+      return { success: true, participante: participant.participante, isAdmin: userIsAdmin };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Erro ao fazer login' };
@@ -175,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ userEmail, participante, isAdmin, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ userEmail, participante, isAdmin, isLoading, checkEmail, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

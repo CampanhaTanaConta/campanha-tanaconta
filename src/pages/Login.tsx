@@ -11,19 +11,34 @@ import logo from '@/assets/logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAdmin } = useAuth();
+  const { login, checkEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [error, setError] = useState('');
-  const [participanteName, setParticipanteName] = useState('');
-  const [showPasswordHint, setShowPasswordHint] = useState(false);
+  const [participantName, setParticipantName] = useState('');
+  const [showPasswordField, setShowPasswordField] = useState(false);
 
   const handleEmailBlur = async () => {
     if (!email.trim()) return;
     
-    // This will be checked during login, but we show a hint here
-    setShowPasswordHint(true);
+    setIsCheckingEmail(true);
+    setError('');
+    setParticipantName('');
+    setShowPasswordField(false);
+    
+    const result = await checkEmail(email);
+    
+    setIsCheckingEmail(false);
+    
+    if (result.exists) {
+      setParticipantName(result.name || '');
+      setShowPasswordField(true);
+    } else {
+      setError('not_registered');
+      setPassword('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,10 +49,7 @@ const Login = () => {
     const result = await login(email, password);
 
     if (result.success) {
-      // Wait a moment for isAdmin state to update, then redirect
-      setTimeout(() => {
-        navigate(isAdmin ? '/admin' : '/dashboard');
-      }, 100);
+      navigate(result.isAdmin ? '/admin' : '/dashboard');
     } else {
       if (result.error === 'not_registered') {
         setError('not_registered');
@@ -69,27 +81,47 @@ const Login = () => {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError('');
+                  setParticipantName('');
+                  setShowPasswordField(false);
+                }}
                 onBlur={handleEmailBlur}
                 required
-                disabled={isLoading}
+                disabled={isLoading || isCheckingEmail}
               />
+              {isCheckingEmail && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Verificando e-mail...
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="ddmmaaaa"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                maxLength={8}
-              />
-              {showPasswordHint && (
-                <Alert className="mt-2 border-primary/30 bg-primary/5">
+            {participantName && (
+              <Alert className="border-primary/30 bg-primary/5">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <AlertDescription>
+                  Olá, <strong>{participantName}</strong>!
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {showPasswordField && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="ddmmaaaa"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  maxLength={8}
+                />
+                <Alert className="border-primary/30 bg-primary/5">
                   <AlertCircle className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-sm">
                     Use sua data de nascimento sem barras (ddmmaaaa).
@@ -97,16 +129,7 @@ const Login = () => {
                     Exemplo: 15/08/1990 → 15081990
                   </AlertDescription>
                 </Alert>
-              )}
-            </div>
-
-            {participanteName && (
-              <Alert className="border-success/30 bg-success/5">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <AlertDescription>
-                  Bem-vindo(a), <strong>{participanteName}</strong>!
-                </AlertDescription>
-              </Alert>
+              </div>
             )}
 
             {error && (
@@ -132,7 +155,7 @@ const Login = () => {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !showPasswordField}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
