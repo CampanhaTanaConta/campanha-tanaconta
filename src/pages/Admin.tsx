@@ -11,7 +11,7 @@ import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut } from 'lucide-react
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { participante, logout } = useAuth();
+  const { participante, isAdmin, logout } = useAuth();
   const { loadData, isLoading, result } = useLoadData();
 
   const [participantsUrl, setParticipantsUrl] = useState('');
@@ -22,6 +22,11 @@ const Admin = () => {
   useEffect(() => {
     if (!participante) {
       navigate('/login');
+      return;
+    }
+
+    if (!isAdmin) {
+      // Not authorized, stay on page but show unauthorized message
       return;
     }
 
@@ -38,7 +43,7 @@ const Admin = () => {
         console.error('Error loading saved URLs:', e);
       }
     }
-  }, [participante, navigate]);
+  }, [participante, isAdmin, navigate]);
 
   const handleLoadData = async () => {
     if (!participantsUrl || !walletUrl || !transactionsUrl || !departmentStoreUrl) {
@@ -65,6 +70,31 @@ const Admin = () => {
     logout();
     navigate('/login');
   };
+
+  // Show unauthorized message if user is not admin
+  if (participante && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle className="text-destructive">Acesso Não Autorizado</CardTitle>
+            <CardDescription>
+              Você não tem permissão para acessar esta página. Apenas administradores podem carregar dados.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={() => navigate('/dashboard')} className="w-full">
+              Voltar ao Dashboard
+            </Button>
+            <Button variant="outline" onClick={handleLogout} className="w-full">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">

@@ -29,7 +29,7 @@ interface ActivationData {
 }
 
 const Dashboard = () => {
-  const { participante, logout } = useAuth();
+  const { participante, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
@@ -188,9 +188,11 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" onClick={() => navigate('/admin')}>
-              Admin
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate('/admin')}>
+                Admin
+              </Button>
+            )}
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Sair

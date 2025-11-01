@@ -5,6 +5,7 @@ import CryptoJS from 'crypto-js';
 interface AuthContextType {
   userEmail: string | null;
   participante: string | null;
+  isAdmin: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; participante?: string }>;
   logout: () => void;
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [participante, setParticipante] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,10 +27,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedEmail && storedParticipante) {
       setUserEmail(storedEmail);
       setParticipante(storedParticipante);
+      // Check admin status from database (never trust localStorage)
+      checkAdminStatus(storedEmail);
     }
     
     setIsLoading(false);
   }, []);
+
+  const checkAdminStatus = async (email: string) => {
+    try {
+      const { data: participant } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (participant) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', participant.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        setIsAdmin(!!roleData);
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -58,11 +86,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Senha incorreta' };
       }
 
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', participant.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      const userIsAdmin = !!roleData;
+
       // Set session
       setUserEmail(normalizedEmail);
       setParticipante(participant.participante);
+      setIsAdmin(userIsAdmin);
       
-      // Store in localStorage
+      // Store in localStorage (email and participante only, never admin status)
       localStorage.setItem('userEmail', normalizedEmail);
       localStorage.setItem('participante', participant.participante);
 
@@ -76,12 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUserEmail(null);
     setParticipante(null);
+    setIsAdmin(false);
     localStorage.removeItem('userEmail');
     localStorage.removeItem('participante');
   };
 
   return (
-    <AuthContext.Provider value={{ userEmail, participante, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ userEmail, participante, isAdmin, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
