@@ -83,12 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
+    console.log('=== INÍCIO DO LOGIN ===');
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const hashedPassword = CryptoJS.SHA256(password).toString();
       
+      console.log('Email normalizado:', normalizedEmail);
+      console.log('Hash da senha:', hashedPassword);
+      
       // Try admin login first
-      console.log('Tentando login admin:', normalizedEmail, hashedPassword.substring(0,10) + '...');
+      console.log('Tentando login admin...');
       const { data: adminResult, error: adminError } = await supabase
         .rpc('verify_admin_login', {
           p_email: normalizedEmail,
