@@ -119,10 +119,15 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Olá, {participante}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+          <div className="flex gap-4">
+            <Button variant="outline" onClick={() => navigate('/admin')}>
+              Admin
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
