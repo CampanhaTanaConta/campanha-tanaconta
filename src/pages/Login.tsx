@@ -18,23 +18,22 @@ const Login = () => {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [error, setError] = useState('');
   const [participantName, setParticipantName] = useState('');
-  const [showPasswordField, setShowPasswordField] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
 
-  const handleEmailBlur = async () => {
-    if (!email.trim()) return;
+  const handlePasswordFocus = async () => {
+    if (!email.trim() || emailChecked) return;
     
     setIsCheckingEmail(true);
     setError('');
     setParticipantName('');
-    setShowPasswordField(false);
     
     const result = await checkEmail(email);
     
     setIsCheckingEmail(false);
+    setEmailChecked(true);
     
     if (result.exists) {
       setParticipantName(result.name || '');
-      setShowPasswordField(true);
     } else {
       setError('not_registered');
       setPassword('');
@@ -43,6 +42,12 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!emailChecked) {
+      setError('Por favor, clique no campo de senha para verificar o e-mail primeiro.');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
@@ -85,9 +90,8 @@ const Login = () => {
                   setEmail(e.target.value);
                   setError('');
                   setParticipantName('');
-                  setShowPasswordField(false);
+                  setEmailChecked(false);
                 }}
-                onBlur={handleEmailBlur}
                 required
                 disabled={isLoading || isCheckingEmail}
               />
@@ -108,29 +112,28 @@ const Login = () => {
               </Alert>
             )}
 
-            {showPasswordField && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="ddmmaaaa"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  maxLength={8}
-                />
-                <Alert className="border-primary/30 bg-primary/5">
-                  <AlertCircle className="h-4 w-4 text-primary" />
-                  <AlertDescription className="text-sm">
-                    Use sua data de nascimento sem barras (ddmmaaaa).
-                    <br />
-                    Exemplo: 15/08/1990 → 15081990
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="ddmmaaaa"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={handlePasswordFocus}
+                required
+                disabled={isLoading || isCheckingEmail}
+                maxLength={8}
+              />
+              <Alert className="border-primary/30 bg-primary/5">
+                <AlertCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  Use sua data de nascimento sem barras (ddmmaaaa).
+                  <br />
+                  Exemplo: 15/08/1990 → 15081990
+                </AlertDescription>
+              </Alert>
+            </div>
 
             {error && (
               <Alert variant="destructive">
@@ -155,7 +158,7 @@ const Login = () => {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading || !showPasswordField}>
+            <Button type="submit" className="w-full" disabled={isLoading || isCheckingEmail}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
