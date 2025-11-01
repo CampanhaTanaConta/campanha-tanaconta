@@ -88,12 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const hashedPassword = CryptoJS.SHA256(password).toString();
       
       // Try admin login first
+      console.log('Tentando login admin:', normalizedEmail, hashedPassword.substring(0,10) + '...');
       const { data: adminResult, error: adminError } = await supabase
         .rpc('verify_admin_login', {
           p_email: normalizedEmail,
           p_password_hash: hashedPassword
         })
         .single();
+      console.log('Resultado admin login:', adminResult, adminError);
 
       if (!adminError && adminResult && adminResult.is_valid) {
         // Set session variables in database for RLS policies
