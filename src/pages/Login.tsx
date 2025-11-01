@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import logo from '@/assets/logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAdmin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,16 +34,18 @@ const Login = () => {
     const result = await login(email, password);
 
     if (result.success) {
-      navigate('/dashboard');
+      // Wait a moment for isAdmin state to update, then redirect
+      setTimeout(() => {
+        navigate(isAdmin ? '/admin' : '/dashboard');
+      }, 100);
     } else {
       if (result.error === 'not_registered') {
         setError('not_registered');
       } else {
         setError(result.error || 'Erro ao fazer login');
       }
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
