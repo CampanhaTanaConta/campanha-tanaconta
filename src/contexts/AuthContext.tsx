@@ -83,22 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
-    alert('=== INÍCIO DO LOGIN ===');
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const hashedPassword = CryptoJS.SHA256(password).toString();
       
-      alert(`Email: ${normalizedEmail}, Hash: ${hashedPassword.substring(0,10)}...`);
+      alert(`Hash gerado: ${hashedPassword}\nEsperado: d70116a54b20b6af1a5729cb0da7ea3f9f3498e6e2f79fb83dbceaec2bc29d33\nMatch: ${hashedPassword === 'd70116a54b20b6af1a5729cb0da7ea3f9f3498e6e2f79fb83dbceaec2bc29d33'}`);
       
       // Try admin login first
-      alert('Chamando verify_admin_login...');
       const { data: adminResult, error: adminError } = await supabase
         .rpc('verify_admin_login', {
           p_email: normalizedEmail,
           p_password_hash: hashedPassword
         })
         .single();
-      alert(`Admin result: ${JSON.stringify(adminResult)}, Error: ${JSON.stringify(adminError)}`);
 
       if (!adminError && adminResult && adminResult.is_valid) {
         // Set session variables in database for RLS policies
