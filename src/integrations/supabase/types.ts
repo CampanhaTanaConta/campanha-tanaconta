@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      participants: {
+        Row: {
+          birth_hash: string
+          birth_raw: string
+          created_at: string | null
+          email: string
+          id: string
+          participante: string
+        }
+        Insert: {
+          birth_hash: string
+          birth_raw: string
+          created_at?: string | null
+          email: string
+          id?: string
+          participante: string
+        }
+        Update: {
+          birth_hash?: string
+          birth_raw?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          participante?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          data_transacao: string
+          id: string
+          premiacao_pct_norm: number
+          premiacao_valor: number
+          tipo_venda: string
+          total_parcela: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          data_transacao: string
+          id?: string
+          premiacao_pct_norm: number
+          premiacao_valor: number
+          tipo_venda: string
+          total_parcela: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          data_transacao?: string
+          id?: string
+          premiacao_pct_norm?: number
+          premiacao_valor?: number
+          tipo_venda?: string
+          total_parcela?: number
+        }
+        Relationships: []
+      }
+      wallet: {
+        Row: {
+          cliente_id: string
+          cliente_nome: string
+          created_at: string | null
+          id: string
+          participante: string
+        }
+        Insert: {
+          cliente_id: string
+          cliente_nome: string
+          created_at?: string | null
+          id?: string
+          participante: string
+        }
+        Update: {
+          cliente_id?: string
+          cliente_nome?: string
+          created_at?: string | null
+          id?: string
+          participante?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
