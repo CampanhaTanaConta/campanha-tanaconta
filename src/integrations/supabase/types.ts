@@ -217,6 +217,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_email_exists: {
+        Args: { p_email: string }
+        Returns: {
+          email_found: boolean
+          is_admin_user: boolean
+          user_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -227,6 +235,24 @@ export type Database = {
       set_user_session: {
         Args: { p_email: string; p_participante: string }
         Returns: undefined
+      }
+      verify_admin_login: {
+        Args: { p_email: string; p_password_hash: string }
+        Returns: {
+          is_admin: boolean
+          is_valid: boolean
+          user_id: string
+          user_name: string
+        }[]
+      }
+      verify_participant_login: {
+        Args: { p_birth_hash: string; p_email: string }
+        Returns: {
+          is_admin: boolean
+          is_valid: boolean
+          user_id: string
+          user_name: string
+        }[]
       }
     }
     Enums: {

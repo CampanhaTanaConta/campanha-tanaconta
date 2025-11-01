@@ -39,29 +39,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const normalizedEmail = email.trim().toLowerCase();
       
-      // First check if user is admin
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('name')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+      // Use secure function to check email
+      const { data, error } = await supabase
+        .rpc('check_email_exists', { p_email: normalizedEmail })
+        .single();
 
-      if (adminUser) {
-        return { exists: true, name: adminUser.name, isAdmin: true };
+      if (error) {
+        console.error('Error checking email:', error);
+        return { exists: false, name: null, isAdmin: false };
       }
 
-      // If not admin, check if regular participant
-      const { data: participant } = await supabase
-        .from('participants')
-        .select('participante')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
-
-      if (participant) {
-        return { exists: true, name: participant.participante, isAdmin: false };
-      }
-
-      return { exists: false, name: null, isAdmin: false };
+      return {
+        exists: data.email_found,
+        name: data.user_name,
+        isAdmin: data.is_admin_user
+      };
     } catch (error) {
       console.error('Error checking email:', error);
       return { exists: false, name: null, isAdmin: false };
@@ -70,42 +62,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAdminStatus = async (email: string) => {
     try {
-      // First check if user is admin
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
+      // Use secure function to check email and get user info
+      const { data, error } = await supabase
+        .rpc('check_email_exists', { p_email: email })
+        .single();
 
-      if (adminUser) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', adminUser.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        setIsAdmin(!!roleData);
+      if (error || !data || !data.email_found) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
         return;
       }
 
-      // If not admin, check if regular participant
-      const { data: participant } = await supabase
-        .from('participants')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (participant) {
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', participant.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        setIsAdmin(!!roleData);
-      }
+      // For now, we trust the is_admin_user flag from the function
+      // In a production environment, you'd want additional verification
+      setIsAdmin(data.is_admin_user);
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);
@@ -117,95 +87,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const normalizedEmail = email.trim().toLowerCase();
       const hashedPassword = CryptoJS.SHA256(password).toString();
       
-      // First, check if user is an admin
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+      // Try admin login first
+      const { data: adminResult, error: adminError } = await supabase
+        .rpc('verify_admin_login', {
+          p_email: normalizedEmail,
+          p_password_hash: hashedPassword
+        })
+        .single();
 
-      if (adminUser) {
-        // Verify admin password
-        if (hashedPassword !== adminUser.password_hash) {
-          return { success: false, error: 'Senha incorreta' };
-        }
-
-        // Check admin role
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', adminUser.id)
-          .eq('role', 'admin')
-          .maybeSingle();
-
-        const userIsAdmin = !!roleData;
-
+      if (!adminError && adminResult && adminResult.is_valid) {
         // Set session variables in database for RLS policies
         await supabase.rpc('set_user_session', {
           p_email: normalizedEmail,
-          p_participante: adminUser.name
+          p_participante: adminResult.user_name
         });
 
         // Set session for admin
         setUserEmail(normalizedEmail);
-        setParticipante(adminUser.name); // Use admin name as "participante"
-        setIsAdmin(userIsAdmin);
+        setParticipante(adminResult.user_name);
+        setIsAdmin(adminResult.is_admin);
         
         localStorage.setItem('userEmail', normalizedEmail);
-        localStorage.setItem('participante', adminUser.name);
+        localStorage.setItem('participante', adminResult.user_name);
 
-        return { success: true, participante: adminUser.name, isAdmin: userIsAdmin };
+        return { success: true, participante: adminResult.user_name, isAdmin: adminResult.is_admin };
       }
 
-      // If not admin, check if user is a participant
-      const { data: participant, error: participantError } = await supabase
-        .from('participants')
-        .select('*')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+      // Try participant login
+      const { data: participantResult, error: participantError } = await supabase
+        .rpc('verify_participant_login', {
+          p_email: normalizedEmail,
+          p_birth_hash: hashedPassword
+        })
+        .single();
 
       if (participantError) {
-        console.error('Error fetching participant:', participantError);
-        return { success: false, error: 'Erro ao buscar dados do participante' };
+        console.error('Error verifying login:', participantError);
+        return { success: false, error: 'Erro ao fazer login' };
       }
 
-      if (!participant) {
-        return { 
-          success: false, 
-          error: 'not_registered'
-        };
+      if (!participantResult || !participantResult.is_valid) {
+        // Check if email exists to show appropriate error
+        const { data: emailCheck } = await supabase
+          .rpc('check_email_exists', { p_email: normalizedEmail })
+          .single();
+        
+        if (emailCheck && emailCheck.email_found) {
+          return { success: false, error: 'Senha incorreta' };
+        } else {
+          return { success: false, error: 'not_registered' };
+        }
       }
-
-      // Verify participant password
-      if (hashedPassword !== participant.birth_hash) {
-        return { success: false, error: 'Senha incorreta' };
-      }
-
-      // Check if participant has admin role (unlikely but possible)
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', participant.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      const userIsAdmin = !!roleData;
 
       // Set session variables in database for RLS policies
       await supabase.rpc('set_user_session', {
         p_email: normalizedEmail,
-        p_participante: participant.participante
+        p_participante: participantResult.user_name
       });
 
       // Set session
       setUserEmail(normalizedEmail);
-      setParticipante(participant.participante);
-      setIsAdmin(userIsAdmin);
+      setParticipante(participantResult.user_name);
+      setIsAdmin(participantResult.is_admin);
       
       localStorage.setItem('userEmail', normalizedEmail);
-      localStorage.setItem('participante', participant.participante);
+      localStorage.setItem('participante', participantResult.user_name);
 
-      return { success: true, participante: participant.participante, isAdmin: userIsAdmin };
+      return { success: true, participante: participantResult.user_name, isAdmin: participantResult.is_admin };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Erro ao fazer login' };
