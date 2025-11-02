@@ -9,6 +9,7 @@ import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart } from 'lucide-reac
 import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
 import { ActivationChart } from '@/components/ActivationChart';
+import { ActivatedClientsTable } from '@/components/ActivatedClientsTable';
 import logo from '@/assets/logo.png';
 
 interface KPIData {
@@ -24,6 +25,7 @@ interface ActivationData {
   pendingClients: number;
   activationRate: number;
   pendingClientsList: any[];
+  activatedClientsList: any[];
   inProgressCount: number;
   noSalesCount: number;
 }
@@ -44,6 +46,7 @@ const Dashboard = () => {
     pendingClients: 0,
     activationRate: 0,
     pendingClientsList: [],
+    activatedClientsList: [],
     inProgressCount: 0,
     noSalesCount: 0,
   });
@@ -118,6 +121,24 @@ const Dashboard = () => {
         const totalClients = departmentStore.length;
         const noSalesClients = totalClients - Object.keys(salesByClient).length;
 
+        // Calculate monthly sales for each client
+        const salesByClientAndMonth = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          const date = new Date(t.data_transacao);
+          const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          
+          if (!acc[clientId]) {
+            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+          }
+          
+          const value = Number(t.total_parcela);
+          if (month === 9) acc[clientId].outubro += value; // October
+          if (month === 10) acc[clientId].novembro += value; // November
+          if (month === 11) acc[clientId].dezembro += value; // December
+          
+          return acc;
+        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+
         // Get pending clients details
         const pendingClientsList = departmentStore
           .filter(client => {
@@ -131,12 +152,26 @@ const Dashboard = () => {
           .sort((a, b) => b.totalVendas - a.totalVendas)
           .slice(0, 10); // Top 10 pending clients
 
+        // Get activated clients details with monthly breakdown
+        const activatedClientsList = departmentStore
+          .filter(client => {
+            const totalVendas = salesByClient[client.cliente_id] || 0;
+            return totalVendas > 500;
+          })
+          .map(client => ({
+            ...client,
+            totalVendas: salesByClient[client.cliente_id] || 0,
+            salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+          }))
+          .sort((a, b) => b.totalVendas - a.totalVendas);
+
         setActivationData({
           totalClients,
           activatedClients,
           pendingClients: totalClients - activatedClients,
           activationRate: totalClients > 0 ? (activatedClients / totalClients) * 100 : 0,
           pendingClientsList,
+          activatedClientsList,
           inProgressCount: inProgressClients,
           noSalesCount: noSalesClients,
         });
@@ -264,6 +299,8 @@ const Dashboard = () => {
             />
 
             <PendingClientsTable clients={activationData.pendingClientsList} />
+
+            <ActivatedClientsTable clients={activationData.activatedClientsList} />
           </>
         )}
 
