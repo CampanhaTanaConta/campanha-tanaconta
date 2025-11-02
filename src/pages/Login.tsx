@@ -29,27 +29,6 @@ const Login = () => {
       localStorage.setItem('DEBUG_LOGIN', '1');
       setDebugMode(true);
       console.warn('🔍 DEBUG MODE ATIVADO via URL');
-      
-      // Test hash formats to debug the stored hash
-      import('crypto-js').then(CryptoJS => {
-        const testDate = '10051984'; // Expected format
-        const variations = [
-          testDate,
-          '1984-05-10',
-          '1984-10-05', 
-          '05101984',
-          '19840510',
-          '19841005',
-        ];
-        
-        console.group('🔐 Testing Hash Variations');
-        variations.forEach(v => {
-          const hash = CryptoJS.default.SHA256(v).toString();
-          console.log(`"${v}" => ${hash}`);
-        });
-        console.log('\nStored hash: d70116a54b20b6af1a5729cb0da7ea3f9f3498e6e2f79fb83dbceaec2bc29d33');
-        console.groupEnd();
-      });
     } else if (localStorage.getItem('DEBUG_LOGIN') === '1') {
       setDebugMode(true);
     }
@@ -88,11 +67,52 @@ const Login = () => {
     }
   };
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remove non-numeric characters except slashes
+    value = value.replace(/[^\d/]/g, '');
+    
+    // Auto-format with slashes DD/MM/AAAA
+    const digitsOnly = value.replace(/\//g, '');
+    if (digitsOnly.length <= 2) {
+      value = digitsOnly;
+    } else if (digitsOnly.length <= 4) {
+      value = digitsOnly.slice(0, 2) + '/' + digitsOnly.slice(2);
+    } else {
+      value = digitsOnly.slice(0, 2) + '/' + digitsOnly.slice(2, 4) + '/' + digitsOnly.slice(4, 8);
+    }
+    
+    // Limit to 10 characters (DD/MM/AAAA)
+    if (value.length <= 10) {
+      setPassword(value);
+    }
+  };
+
+  const validateDateFormat = (dateStr: string): boolean => {
+    // Check format DD/MM/AAAA
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = dateStr.match(regex);
+    
+    if (!match) return false;
+    
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    
+    // Basic validation
+    if (day < 1 || day > 31) return false;
+    if (month < 1 || month > 12) return false;
+    if (year < 1900 || year > new Date().getFullYear()) return false;
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (debugMode) {
-      console.warn('🚀 LOGIN SUBMIT CLICADO', { email, passwordLength: password.length });
+      console.warn('🚀 LOGIN SUBMIT CLICADO', { email, password, passwordLength: password.length });
     }
     
     if (!emailChecked) {
@@ -101,9 +121,15 @@ const Login = () => {
       return;
     }
     
-    if (password.length !== 8 || !/^\d{8}$/.test(password)) {
-      setError('A senha deve conter exatamente 8 números (sua data de nascimento).');
-      if (debugMode) console.error('❌ Senha inválida', { length: password.length, isNumeric: /^\d{8}$/.test(password) });
+    if (password.length !== 10) {
+      setError('A senha deve estar no formato DD/MM/AAAA (10 caracteres).');
+      if (debugMode) console.error('❌ Senha com tamanho errado', { length: password.length });
+      return;
+    }
+
+    if (!validateDateFormat(password)) {
+      setError('Data inválida. Use o formato DD/MM/AAAA (ex: 10/05/1984).');
+      if (debugMode) console.error('❌ Formato de data inválido', { password });
       return;
     }
     
@@ -206,25 +232,21 @@ const Login = () => {
                 id="password"
                 type="text"
                 inputMode="numeric"
-                pattern="[0-9]*"
-                placeholder="ddmmaaaa"
+                placeholder="DD/MM/AAAA"
                 value={password}
-                onChange={(e) => {
-                  const digitsOnly = e.target.value.replace(/\D/g, '');
-                  setPassword(digitsOnly);
-                }}
+                onChange={handlePasswordChange}
                 onFocus={handlePasswordFocus}
                 required
                 disabled={isLoading || isCheckingEmail}
-                maxLength={8}
+                maxLength={10}
               />
               {showPasswordHint && (
                 <Alert className="border-primary/30 bg-primary/5">
                   <AlertCircle className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-sm">
-                    Digite apenas os 8 números da sua data de nascimento (ddmmaaaa).
+                    Digite sua data de nascimento no formato DD/MM/AAAA.
                     <br />
-                    Exemplo: 15 de agosto de 1990 → 15081990
+                    Exemplo: 15 de agosto de 1990 → 15/08/1990
                   </AlertDescription>
                 </Alert>
               )}

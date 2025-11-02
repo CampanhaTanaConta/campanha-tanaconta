@@ -55,7 +55,8 @@ Deno.serve(async (req) => {
           if (!day || !month || !year) continue;
 
           const birthDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-          const passwordPlain = `${day.padStart(2, '0')}${month.padStart(2, '0')}${year}`;
+          // Use original format with slashes (DD/MM/AAAA) for hash generation
+          const passwordPlain = nascimento;
           const birthHash = CryptoJS.SHA256(passwordPlain).toString();
 
           const { error } = await supabaseClient
