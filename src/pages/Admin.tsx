@@ -10,7 +10,6 @@ import { useLoadData } from '@/hooks/useLoadData';
 import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import CryptoJS from 'crypto-js';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -139,71 +138,24 @@ const Admin = () => {
     setIsCreatingAdmin(true);
 
     try {
-      // Check if email already exists in admin_users
-      const { data: existingAdmin } = await supabase
-        .from('admin_users')
-        .select('email')
-        .eq('email', newAdminEmail.trim())
-        .single();
-
-      if (existingAdmin) {
-        toast({
-          title: "E-mail já cadastrado",
-          description: "Este e-mail já está registrado como administrador",
-          variant: "destructive",
-        });
-        setIsCreatingAdmin(false);
-        return;
-      }
-
-      // Check if email exists in participants
-      const { data: existingParticipant } = await supabase
-        .from('participants')
-        .select('email')
-        .eq('email', newAdminEmail.trim())
-        .single();
-
-      if (existingParticipant) {
-        toast({
-          title: "E-mail já cadastrado",
-          description: "Este e-mail já está registrado como participante",
-          variant: "destructive",
-        });
-        setIsCreatingAdmin(false);
-        return;
-      }
-
-      // Generate hash from birth date
-      const birthHash = CryptoJS.SHA256(newAdminBirthDate).toString();
-      
-      // Convert DD/MM/YYYY to YYYY-MM-DD
-      const [day, month, year] = newAdminBirthDate.split('/');
-      const birthRaw = `${year}-${month}-${day}`;
-
-      // Insert admin user
-      const { data: newAdmin, error: insertError } = await supabase
-        .from('admin_users')
-        .insert({
+      const { data, error } = await supabase.functions.invoke('create-admin', {
+        body: {
           name: newAdminName.trim(),
           email: newAdminEmail.trim(),
-          password_hash: birthHash,
-          birth_hash: birthHash,
-          birth_raw: birthRaw,
-        })
-        .select()
-        .single();
+          birthDate: newAdminBirthDate,
+        },
+      });
 
-      if (insertError) throw insertError;
+      if (error) throw error;
 
-      // Insert admin role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: newAdmin.id,
-          role: 'admin',
+      if (data?.error) {
+        toast({
+          title: "Erro ao criar administrador",
+          description: data.error,
+          variant: "destructive",
         });
-
-      if (roleError) throw roleError;
+        return;
+      }
 
       toast({
         title: "Administrador criado com sucesso",
@@ -218,7 +170,7 @@ const Admin = () => {
       console.error('Error creating admin:', error);
       toast({
         title: "Erro ao criar administrador",
-        description: "Ocorreu um erro ao criar o administrador. Tente novamente.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar o administrador. Tente novamente.",
         variant: "destructive",
       });
     } finally {
