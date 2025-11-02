@@ -183,7 +183,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <img src={logo} alt="Logo" className="h-12 w-12" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <h1 className="text-2xl font-bold text-foreground">Dashboard Campanha Tá na Conta e no Cartão</h1>
               <p className="text-sm text-muted-foreground">Olá, {participante}</p>
             </div>
           </div>
