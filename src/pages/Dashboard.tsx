@@ -102,14 +102,18 @@ const Dashboard = () => {
         const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
         // Calculate estimated award projection until 31/12/2025
-        const startDate = new Date('2024-10-15');
+        const startDate = new Date('2025-10-15');
         const endDate = new Date('2025-12-31');
-        const currentDate = new Date();
+        
+        // Use the date of the last transaction import (most recent created_at)
+        const lastUpdateDate = transactions.length > 0
+          ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
+          : new Date();
 
         let premiacaoEstimada = premiacaoAtual;
         
-        if (currentDate < endDate && currentDate >= startDate) {
-          const diasDecorridos = Math.max(1, Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
+          const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
           const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
           const taxaDiaria = premiacaoAtual / diasDecorridos;
           premiacaoEstimada = taxaDiaria * diasTotais;
