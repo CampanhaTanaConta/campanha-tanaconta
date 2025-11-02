@@ -26,6 +26,19 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
     }).format(value);
   };
 
+  const formatPhoneForWhatsApp = (phone: string): string => {
+    const cleaned = phone.replace(/\D/g, '');
+    return cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
+  };
+
+  const getWhatsAppLink = (phone: string): string => {
+    const formattedPhone = formatPhoneForWhatsApp(phone);
+    const message = encodeURIComponent(
+      'Olá! Como está a adoção da maquininha Tá na Conta? Tem alguma dúvida que eu possa ajudar?'
+    );
+    return `https://wa.me/${formattedPhone}?text=${message}`;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -71,13 +84,27 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                         {client.email && (
                           <div className="flex items-center gap-1">
                             <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs truncate max-w-[200px]">{client.email}</span>
+                            <a 
+                              href={`mailto:${client.email}`}
+                              className="text-xs truncate max-w-[200px] text-primary hover:underline cursor-pointer"
+                              title="Enviar e-mail"
+                            >
+                              {client.email}
+                            </a>
                           </div>
                         )}
                         {client.telefone && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs">{client.telefone}</span>
+                            <a
+                              href={getWhatsAppLink(client.telefone)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline cursor-pointer"
+                              title="Abrir WhatsApp"
+                            >
+                              {client.telefone}
+                            </a>
                           </div>
                         )}
                       </div>
