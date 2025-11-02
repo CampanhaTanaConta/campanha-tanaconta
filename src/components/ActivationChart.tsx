@@ -83,10 +83,30 @@ export const ActivationChart = ({
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent, total }) => 
-                  `${name}: ${(percent * 100).toFixed(0)}% (${formatCurrency(total)})`
-                }
-                outerRadius={80}
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                  const RADIAN = Math.PI / 180;
+                  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  
+                  return (
+                    <text 
+                      x={x} 
+                      y={y} 
+                      fill="white" 
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fontSize={12}
+                      fontWeight={600}
+                    >
+                      <tspan x={x} dy={0}>{`${(percent * 100).toFixed(0)}%`}</tspan>
+                      <tspan x={x} dy={14} fontSize={10}>
+                        {formatCurrency(pieData[index].total)}
+                      </tspan>
+                    </text>
+                  );
+                }}
+                outerRadius={90}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -131,18 +151,33 @@ export const ActivationChart = ({
                 dataKey="quantidade" 
                 radius={[8, 8, 0, 0]}
                 label={(props: any) => {
-                  const { x, y, width, valor } = props;
+                  const { x, y, width, height, quantidade, valor } = props;
                   return (
-                    <text 
-                      x={x + width / 2} 
-                      y={y - 5} 
-                      fill="hsl(var(--foreground))" 
-                      textAnchor="middle" 
-                      fontSize={12}
-                      fontWeight={600}
-                    >
-                      {formatCurrency(valor)}
-                    </text>
+                    <g>
+                      {/* Label de valor acima da barra */}
+                      <text 
+                        x={x + width / 2} 
+                        y={y - 10} 
+                        fill="hsl(var(--foreground))" 
+                        textAnchor="middle" 
+                        fontSize={11}
+                        fontWeight={600}
+                      >
+                        {formatCurrency(valor)}
+                      </text>
+                      {/* Label de quantidade dentro da barra */}
+                      <text 
+                        x={x + width / 2} 
+                        y={y + height / 2} 
+                        fill="white" 
+                        textAnchor="middle" 
+                        dominantBaseline="central"
+                        fontSize={14}
+                        fontWeight={700}
+                      >
+                        {quantidade}
+                      </text>
+                    </g>
                   );
                 }}
               />

@@ -61,15 +61,17 @@ export const ActivationStats = ({
           <CardTitle className="text-sm font-medium">Vendas de Energia Solar</CardTitle>
           <Target className="h-4 w-4 text-accent" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-accent">{solarSalesClients}</div>
-          <p className="text-xs text-muted-foreground">
-            {solarSalesClients === 1 ? 'Cliente vendeu' : 'Clientes venderam'} Energia Solar
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {nonSolarSalesClients} ainda {nonSolarSalesClients === 1 ? 'não vendeu' : 'não venderam'}
-          </p>
-        </CardContent>
+      <CardContent>
+        <div className={`text-2xl font-bold ${solarSalesClients === 0 ? 'text-destructive' : 'text-accent'}`}>
+          {solarSalesClients}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {solarSalesClients === 1 ? 'Cliente vendeu' : 'Clientes venderam'} Energia Solar
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {nonSolarSalesClients} ainda {nonSolarSalesClients === 1 ? 'não vendeu' : 'não venderam'}
+        </p>
+      </CardContent>
       </Card>
     </div>
   );

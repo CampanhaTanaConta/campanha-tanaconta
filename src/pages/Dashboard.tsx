@@ -363,7 +363,7 @@ const Dashboard = () => {
                   Você ativou o seu cartão!
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Meta de R$ 50.000,00 alcançada
+                  Mínimo de R$ 50.000,00 alcançado
                 </p>
               </CardContent>
             </Card>
