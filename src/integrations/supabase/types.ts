@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       admin_users: {
         Row: {
+          birth_hash: string | null
+          birth_raw: string | null
           created_at: string | null
           email: string
           id: string
@@ -23,6 +25,8 @@ export type Database = {
           password_hash: string
         }
         Insert: {
+          birth_hash?: string | null
+          birth_raw?: string | null
           created_at?: string | null
           email: string
           id?: string
@@ -30,6 +34,8 @@ export type Database = {
           password_hash: string
         }
         Update: {
+          birth_hash?: string | null
+          birth_raw?: string | null
           created_at?: string | null
           email?: string
           id?: string

@@ -7,7 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useLoadData } from '@/hooks/useLoadData';
-import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut } from 'lucide-react';
+import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import CryptoJS from 'crypto-js';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -18,6 +21,14 @@ const Admin = () => {
   const [walletUrl, setWalletUrl] = useState('');
   const [transactionsUrl, setTransactionsUrl] = useState('');
   const [departmentStoreUrl, setDepartmentStoreUrl] = useState('');
+  
+  // Admin creation states
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminBirthDate, setNewAdminBirthDate] = useState('');
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!participante) {
@@ -71,6 +82,150 @@ const Admin = () => {
     navigate('/login');
   };
 
+  const formatBirthDate = (value: string) => {
+    let formatted = value.replace(/[^\d]/g, '');
+    
+    if (formatted.length >= 2) {
+      formatted = formatted.slice(0, 2) + '/' + formatted.slice(2);
+    }
+    if (formatted.length >= 5) {
+      formatted = formatted.slice(0, 5) + '/' + formatted.slice(5, 9);
+    }
+    
+    return formatted;
+  };
+
+  const handleBirthDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatBirthDate(e.target.value);
+    setNewAdminBirthDate(formatted);
+  };
+
+  const validateDateFormat = (date: string) => {
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = date.match(regex);
+    
+    if (!match) return false;
+    
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    
+    if (month < 1 || month > 12) return false;
+    if (day < 1 || day > 31) return false;
+    if (year < 1900 || year > 2100) return false;
+    
+    return true;
+  };
+
+  const handleCreateAdmin = async () => {
+    if (!newAdminName.trim() || !newAdminEmail.trim() || !newAdminBirthDate.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateDateFormat(newAdminBirthDate)) {
+      toast({
+        title: "Data inválida",
+        description: "Use o formato DD/MM/AAAA (ex: 22/12/1981)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingAdmin(true);
+
+    try {
+      // Check if email already exists in admin_users
+      const { data: existingAdmin } = await supabase
+        .from('admin_users')
+        .select('email')
+        .eq('email', newAdminEmail.trim())
+        .single();
+
+      if (existingAdmin) {
+        toast({
+          title: "E-mail já cadastrado",
+          description: "Este e-mail já está registrado como administrador",
+          variant: "destructive",
+        });
+        setIsCreatingAdmin(false);
+        return;
+      }
+
+      // Check if email exists in participants
+      const { data: existingParticipant } = await supabase
+        .from('participants')
+        .select('email')
+        .eq('email', newAdminEmail.trim())
+        .single();
+
+      if (existingParticipant) {
+        toast({
+          title: "E-mail já cadastrado",
+          description: "Este e-mail já está registrado como participante",
+          variant: "destructive",
+        });
+        setIsCreatingAdmin(false);
+        return;
+      }
+
+      // Generate hash from birth date
+      const birthHash = CryptoJS.SHA256(newAdminBirthDate).toString();
+      
+      // Convert DD/MM/YYYY to YYYY-MM-DD
+      const [day, month, year] = newAdminBirthDate.split('/');
+      const birthRaw = `${year}-${month}-${day}`;
+
+      // Insert admin user
+      const { data: newAdmin, error: insertError } = await supabase
+        .from('admin_users')
+        .insert({
+          name: newAdminName.trim(),
+          email: newAdminEmail.trim(),
+          password_hash: birthHash,
+          birth_hash: birthHash,
+          birth_raw: birthRaw,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Insert admin role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: newAdmin.id,
+          role: 'admin',
+        });
+
+      if (roleError) throw roleError;
+
+      toast({
+        title: "Administrador criado com sucesso",
+        description: `${newAdminName} pode fazer login com a data de nascimento como senha`,
+      });
+
+      // Clear form
+      setNewAdminName('');
+      setNewAdminEmail('');
+      setNewAdminBirthDate('');
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      toast({
+        title: "Erro ao criar administrador",
+        description: "Ocorreu um erro ao criar o administrador. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
+
   // Show unauthorized message if user is not admin
   if (participante && !isAdmin) {
     return (
@@ -116,6 +271,72 @@ const Admin = () => {
         </div>
 
         <div className="grid gap-6 max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gerenciar Administradores</CardTitle>
+              <CardDescription>Crie novos administradores para o sistema</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="adminName">Nome Completo</Label>
+                <Input
+                  id="adminName"
+                  placeholder="Ex: João da Silva"
+                  value={newAdminName}
+                  onChange={(e) => setNewAdminName(e.target.value)}
+                  disabled={isCreatingAdmin}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="adminEmail">E-mail</Label>
+                <Input
+                  id="adminEmail"
+                  type="email"
+                  placeholder="joao@exemplo.com.br"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  disabled={isCreatingAdmin}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="adminBirthDate">Data de Nascimento (será a senha)</Label>
+                <Input
+                  id="adminBirthDate"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="DD/MM/AAAA"
+                  value={newAdminBirthDate}
+                  onChange={handleBirthDateChange}
+                  disabled={isCreatingAdmin}
+                  maxLength={10}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Esta data será usada como senha de login do administrador
+                </p>
+              </div>
+
+              <Button
+                onClick={handleCreateAdmin}
+                disabled={isCreatingAdmin || !newAdminName || !newAdminEmail || !newAdminBirthDate}
+                className="w-full"
+              >
+                {isCreatingAdmin ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Criando administrador...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Criar Administrador
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Como publicar planilhas do Google Sheets como CSV</CardTitle>
