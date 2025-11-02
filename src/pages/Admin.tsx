@@ -222,74 +222,147 @@ const Admin = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 max-w-4xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Administradores</CardTitle>
-              <CardDescription>Crie novos administradores para o sistema</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="adminName">Nome Completo</Label>
-                <Input
-                  id="adminName"
-                  placeholder="Ex: João da Silva"
-                  value={newAdminName}
-                  onChange={(e) => setNewAdminName(e.target.value)}
-                  disabled={isCreatingAdmin}
-                />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>URLs das Planilhas</CardTitle>
+                <CardDescription>Informe as URLs públicas das planilhas em formato CSV</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="participants">Participantes (E-mails de confirmação)</Label>
+                  <Input
+                    id="participants"
+                    placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                    value={participantsUrl}
+                    onChange={(e) => setParticipantsUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="adminEmail">E-mail</Label>
-                <Input
-                  id="adminEmail"
-                  type="email"
-                  placeholder="joao@exemplo.com.br"
-                  value={newAdminEmail}
-                  onChange={(e) => setNewAdminEmail(e.target.value)}
-                  disabled={isCreatingAdmin}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="wallet">Carteira (Campanha)</Label>
+                  <Input
+                    id="wallet"
+                    placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                    value={walletUrl}
+                    onChange={(e) => setWalletUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="adminBirthDate">Data de Nascimento (será a senha)</Label>
-                <Input
-                  id="adminBirthDate"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="DD/MM/AAAA"
-                  value={newAdminBirthDate}
-                  onChange={handleBirthDateChange}
-                  disabled={isCreatingAdmin}
-                  maxLength={10}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Esta data será usada como senha de login do administrador
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transactions">Transações</Label>
+                  <Input
+                    id="transactions"
+                    placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                    value={transactionsUrl}
+                    onChange={(e) => setTransactionsUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <Button
-                onClick={handleCreateAdmin}
-                disabled={isCreatingAdmin || !newAdminName || !newAdminEmail || !newAdminBirthDate}
-                className="w-full"
-              >
-                {isCreatingAdmin ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Criando administrador...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Criar Administrador
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="departmentStore">Department Store (Estabelecimentos)</Label>
+                  <Input
+                    id="departmentStore"
+                    placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+                    value={departmentStoreUrl}
+                    onChange={(e) => setDepartmentStoreUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
 
-          <Card>
+                <Button
+                  onClick={handleLoadData}
+                  disabled={isLoading || !participantsUrl || !walletUrl || !transactionsUrl || !departmentStoreUrl}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Carregando dados...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Carregar Dados
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciar Administradores</CardTitle>
+                <CardDescription>Crie novos administradores para o sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Nome Completo</Label>
+                  <Input
+                    id="adminName"
+                    placeholder="Ex: João da Silva"
+                    value={newAdminName}
+                    onChange={(e) => setNewAdminName(e.target.value)}
+                    disabled={isCreatingAdmin}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminEmail">E-mail</Label>
+                  <Input
+                    id="adminEmail"
+                    type="email"
+                    placeholder="joao@exemplo.com.br"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    disabled={isCreatingAdmin}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminBirthDate">Data de Nascimento (será a senha)</Label>
+                  <Input
+                    id="adminBirthDate"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="DD/MM/AAAA"
+                    value={newAdminBirthDate}
+                    onChange={handleBirthDateChange}
+                    disabled={isCreatingAdmin}
+                    maxLength={10}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Esta data será usada como senha de login do administrador
+                  </p>
+                </div>
+
+                <Button
+                  onClick={handleCreateAdmin}
+                  disabled={isCreatingAdmin || !newAdminName || !newAdminEmail || !newAdminBirthDate}
+                  className="w-full"
+                >
+                  {isCreatingAdmin ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Criando administrador...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Criar Administrador
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="lg:row-span-2">
             <CardHeader>
               <CardTitle>Como publicar planilhas do Google Sheets como CSV</CardTitle>
               <CardDescription>Siga estes passos para obter as URLs públicas das suas planilhas</CardDescription>
@@ -303,77 +376,6 @@ const Admin = () => {
                 <li>Clique em <strong>Publicar</strong> e copie o link gerado</li>
                 <li>Cole o link no campo correspondente abaixo</li>
               </ol>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>URLs das Planilhas</CardTitle>
-              <CardDescription>Informe as URLs públicas das planilhas em formato CSV</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="participants">Participantes (E-mails de confirmação)</Label>
-                <Input
-                  id="participants"
-                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
-                  value={participantsUrl}
-                  onChange={(e) => setParticipantsUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="wallet">Carteira (Campanha)</Label>
-                <Input
-                  id="wallet"
-                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
-                  value={walletUrl}
-                  onChange={(e) => setWalletUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="transactions">Transações</Label>
-                <Input
-                  id="transactions"
-                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
-                  value={transactionsUrl}
-                  onChange={(e) => setTransactionsUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="departmentStore">Department Store (Estabelecimentos)</Label>
-                <Input
-                  id="departmentStore"
-                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
-                  value={departmentStoreUrl}
-                  onChange={(e) => setDepartmentStoreUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
-              <Button
-                onClick={handleLoadData}
-                disabled={isLoading || !participantsUrl || !walletUrl || !transactionsUrl || !departmentStoreUrl}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Carregando dados...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Carregar Dados
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
 
