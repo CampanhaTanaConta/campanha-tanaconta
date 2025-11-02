@@ -28,6 +28,9 @@ interface ActivationData {
   activatedClientsList: any[];
   inProgressCount: number;
   noSalesCount: number;
+  activatedValue: number;
+  inProgressValue: number;
+  noSalesValue: number;
 }
 
 const Dashboard = () => {
@@ -49,6 +52,9 @@ const Dashboard = () => {
     activatedClientsList: [],
     inProgressCount: 0,
     noSalesCount: 0,
+    activatedValue: 0,
+    inProgressValue: 0,
+    noSalesValue: 0,
   });
 
   useEffect(() => {
@@ -121,6 +127,17 @@ const Dashboard = () => {
         const totalClients = departmentStore.length;
         const noSalesClients = totalClients - Object.keys(salesByClient).length;
 
+        // Calculate total sales values by status
+        const activatedValue = Object.values(salesByClient)
+          .filter(total => total > 500)
+          .reduce((sum, val) => sum + val, 0);
+        
+        const inProgressValue = Object.entries(salesByClient)
+          .filter(([_, total]) => total > 0 && total <= 500)
+          .reduce((sum, [_, val]) => sum + val, 0);
+        
+        const noSalesValue = 0; // Clientes sem vendas têm valor 0
+
         // Calculate monthly sales for each client
         const salesByClientAndMonth = transactions?.reduce((acc, t) => {
           const clientId = t.cliente_id;
@@ -174,6 +191,9 @@ const Dashboard = () => {
           activatedClientsList,
           inProgressCount: inProgressClients,
           noSalesCount: noSalesClients,
+          activatedValue,
+          inProgressValue,
+          noSalesValue,
         });
       }
 
@@ -296,6 +316,9 @@ const Dashboard = () => {
               activatedCount={activationData.activatedClients}
               inProgressCount={activationData.inProgressCount}
               noSalesCount={activationData.noSalesCount}
+              activatedValue={activationData.activatedValue}
+              inProgressValue={activationData.inProgressValue}
+              noSalesValue={activationData.noSalesValue}
             />
 
             <PendingClientsTable clients={activationData.pendingClientsList} />

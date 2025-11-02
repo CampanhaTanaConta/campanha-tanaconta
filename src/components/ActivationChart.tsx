@@ -6,19 +6,66 @@ interface ActivationChartProps {
   activatedCount: number;
   inProgressCount: number;
   noSalesCount: number;
+  activatedValue: number;
+  inProgressValue: number;
+  noSalesValue: number;
 }
 
-export const ActivationChart = ({ activatedCount, inProgressCount, noSalesCount }: ActivationChartProps) => {
+export const ActivationChart = ({ 
+  activatedCount, 
+  inProgressCount, 
+  noSalesCount,
+  activatedValue,
+  inProgressValue,
+  noSalesValue
+}: ActivationChartProps) => {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   const pieData = [
-    { name: 'Ativados (>R$500)', value: activatedCount, color: 'hsl(var(--success))' },
-    { name: 'Em Progresso', value: inProgressCount, color: 'hsl(var(--warning))' },
-    { name: 'Sem Vendas', value: noSalesCount, color: 'hsl(var(--muted))' },
+    { 
+      name: 'Ativados (>R$500)', 
+      value: activatedCount, 
+      color: 'hsl(var(--success))',
+      total: activatedValue
+    },
+    { 
+      name: 'Em Progresso', 
+      value: inProgressCount, 
+      color: 'hsl(var(--warning))',
+      total: inProgressValue
+    },
+    { 
+      name: 'Sem Vendas', 
+      value: noSalesCount, 
+      color: 'hsl(var(--muted))',
+      total: noSalesValue
+    },
   ];
 
   const barData = [
-    { status: 'Ativados', quantidade: activatedCount, fill: 'hsl(var(--success))' },
-    { status: 'Em Progresso', quantidade: inProgressCount, fill: 'hsl(var(--warning))' },
-    { status: 'Sem Vendas', quantidade: noSalesCount, fill: 'hsl(var(--muted))' },
+    { 
+      status: 'Ativados', 
+      quantidade: activatedCount, 
+      fill: 'hsl(var(--success))',
+      valor: activatedValue
+    },
+    { 
+      status: 'Em Progresso', 
+      quantidade: inProgressCount, 
+      fill: 'hsl(var(--warning))',
+      valor: inProgressValue
+    },
+    { 
+      status: 'Sem Vendas', 
+      quantidade: noSalesCount, 
+      fill: 'hsl(var(--muted))',
+      valor: noSalesValue
+    },
   ];
 
   return (
@@ -36,7 +83,9 @@ export const ActivationChart = ({ activatedCount, inProgressCount, noSalesCount 
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent, total }) => 
+                  `${name}: ${(percent * 100).toFixed(0)}% (${formatCurrency(total)})`
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -62,8 +111,41 @@ export const ActivationChart = ({ activatedCount, inProgressCount, noSalesCount 
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="status" />
               <YAxis />
-              <Tooltip />
-              <Bar dataKey="quantidade" radius={[8, 8, 0, 0]} />
+              <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-background border rounded-lg p-3 shadow-lg">
+                        <p className="font-semibold">{payload[0].payload.status}</p>
+                        <p className="text-sm">Quantidade: {payload[0].payload.quantidade}</p>
+                        <p className="text-sm font-medium text-primary">
+                          Total: {formatCurrency(payload[0].payload.valor)}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Bar 
+                dataKey="quantidade" 
+                radius={[8, 8, 0, 0]}
+                label={(props: any) => {
+                  const { x, y, width, valor } = props;
+                  return (
+                    <text 
+                      x={x + width / 2} 
+                      y={y - 5} 
+                      fill="hsl(var(--foreground))" 
+                      textAnchor="middle" 
+                      fontSize={12}
+                      fontWeight={600}
+                    >
+                      {formatCurrency(valor)}
+                    </text>
+                  );
+                }}
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
