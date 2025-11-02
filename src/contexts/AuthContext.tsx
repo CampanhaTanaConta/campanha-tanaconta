@@ -90,8 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // DEBUG MODE - Only active when localStorage.DEBUG_LOGIN === "1"
       if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
         console.group('🔍 LOGIN DEBUG');
-        console.log('📧 Email (normalized):', normalizedEmail);
-        console.log('🔑 Password info:', {
+        console.warn('📧 Email (normalized):', normalizedEmail);
+        console.warn('🔑 Password info:', {
           raw: password,
           length: password.length,
           charCodes: Array.from(password).map(c => c.charCodeAt(0)),
@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         const rawHash = CryptoJS.SHA256(password).toString();
         const trimmedHash = CryptoJS.SHA256(password.trim()).toString();
-        console.log('🔐 Hashes:', {
+        console.warn('🔐 Hashes:', {
           rawHash,
           trimmedHash,
           usedHash: hashedPassword,
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
-        console.log('👤 Admin RPC result:', { adminResult, adminError });
+        console.warn('👤 Admin RPC result:', { adminResult, adminError });
       }
 
       if (!adminError && adminResult && adminResult.is_valid) {
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
-        console.log('👥 Participant RPC result:', { participantResult, participantError });
+        console.warn('👥 Participant RPC result:', { participantResult, participantError });
         console.groupEnd();
       }
 

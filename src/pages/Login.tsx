@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login, checkEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +21,29 @@ const Login = () => {
   const [participantName, setParticipantName] = useState('');
   const [emailChecked, setEmailChecked] = useState(false);
   const [showPasswordHint, setShowPasswordHint] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+
+  // Check for ?debug=1 in URL and activate debug mode
+  useEffect(() => {
+    if (searchParams.get('debug') === '1') {
+      localStorage.setItem('DEBUG_LOGIN', '1');
+      setDebugMode(true);
+      console.warn('🔍 DEBUG MODE ATIVADO via URL');
+    } else if (localStorage.getItem('DEBUG_LOGIN') === '1') {
+      setDebugMode(true);
+    }
+  }, [searchParams]);
+
+  const disableDebug = () => {
+    localStorage.removeItem('DEBUG_LOGIN');
+    setDebugMode(false);
+    // Remove ?debug=1 from URL if present
+    if (searchParams.get('debug') === '1') {
+      searchParams.delete('debug');
+      setSearchParams(searchParams);
+    }
+    console.warn('🔍 DEBUG MODE DESATIVADO');
+  };
 
   const handlePasswordFocus = async () => {
     setShowPasswordHint(true);
@@ -46,13 +70,19 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (debugMode) {
+      console.warn('🚀 LOGIN SUBMIT CLICADO', { email, passwordLength: password.length });
+    }
+    
     if (!emailChecked) {
       setError('Por favor, clique no campo de senha para verificar o e-mail primeiro.');
+      if (debugMode) console.error('❌ Email não verificado');
       return;
     }
     
     if (password.length !== 8 || !/^\d{8}$/.test(password)) {
       setError('A senha deve conter exatamente 8 números (sua data de nascimento).');
+      if (debugMode) console.error('❌ Senha inválida', { length: password.length, isNumeric: /^\d{8}$/.test(password) });
       return;
     }
     
@@ -75,6 +105,18 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-primary/10 p-4">
+      {debugMode && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-lg shadow-lg font-bold">
+          🔍 DEBUG ATIVO
+          <button 
+            onClick={disableDebug}
+            className="ml-2 hover:bg-yellow-600 rounded p-1"
+            title="Desativar debug"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
