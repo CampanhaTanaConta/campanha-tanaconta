@@ -14,7 +14,8 @@ import logo from '@/assets/logo.png';
 
 interface KPIData {
   vendas: number;
-  premiacao: number;
+  premiacaoAtual: number;
+  premiacaoEstimada: number;
   clientesAtivos: number;
   ticketMedio: number;
 }
@@ -39,7 +40,8 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
     vendas: 0,
-    premiacao: 0,
+    premiacaoAtual: 0,
+    premiacaoEstimada: 0,
     clientesAtivos: 0,
     ticketMedio: 0,
   });
@@ -94,13 +96,28 @@ const Dashboard = () => {
       // Calculate KPIs
       if (transactions && transactions.length > 0) {
         const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
-        const premiacao = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
+        const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
         const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
         const ticketMedio = vendas / transactions.length;
 
+        // Calculate estimated award projection until 31/12/2025
+        const startDate = new Date('2024-10-15');
+        const endDate = new Date('2025-12-31');
+        const currentDate = new Date();
+
+        let premiacaoEstimada = premiacaoAtual;
+        
+        if (currentDate < endDate && currentDate >= startDate) {
+          const diasDecorridos = Math.max(1, Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+          const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          const taxaDiaria = premiacaoAtual / diasDecorridos;
+          premiacaoEstimada = taxaDiaria * diasTotais;
+        }
+
         setKpis({
           vendas,
-          premiacao,
+          premiacaoAtual,
+          premiacaoEstimada,
           clientesAtivos,
           ticketMedio,
         });
@@ -271,23 +288,23 @@ const Dashboard = () => {
 
           <Card className="border-success/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Premiação Estimada</CardTitle>
+              <CardTitle className="text-sm font-medium">Premiação Atual</CardTitle>
               <TrendingUp className="h-5 w-5 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-success">{formatCurrency(kpis.premiacao)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Valor total de comissão</p>
+              <div className="text-3xl font-bold text-success">{formatCurrency(kpis.premiacaoAtual)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Valor acumulado até hoje</p>
             </CardContent>
           </Card>
 
-          <Card className="border-accent/20 shadow-lg hover:shadow-xl transition-shadow">
+          <Card className="border-warning/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Clientes Ativos</CardTitle>
-              <Users className="h-5 w-5 text-accent" />
+              <CardTitle className="text-sm font-medium">Premiação Estimada</CardTitle>
+              <TrendingUp className="h-5 w-5 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{kpis.clientesAtivos}</div>
-              <p className="text-xs text-muted-foreground mt-1">Clientes com vendas</p>
+              <div className="text-3xl font-bold text-warning">{formatCurrency(kpis.premiacaoEstimada)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
             </CardContent>
           </Card>
 
