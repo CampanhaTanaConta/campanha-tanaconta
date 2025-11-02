@@ -92,7 +92,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                     </TableCell>
                     <TableCell>
                       <Badge variant={client.totalVendas > 0 ? "secondary" : "outline"}>
-                        {client.totalVendas > 0 ? 'Em Progresso' : 'Sem Vendas'}
+                        {client.totalVendas > 0 ? 'Em Progresso' : 'Sem Vendas desde 15/10/25'}
                       </Badge>
                     </TableCell>
                   </TableRow>
