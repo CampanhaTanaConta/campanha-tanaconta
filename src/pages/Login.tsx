@@ -51,6 +51,11 @@ const Login = () => {
       return;
     }
     
+    if (password.length !== 8 || !/^\d{8}$/.test(password)) {
+      setError('A senha deve conter exatamente 8 números (sua data de nascimento).');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
@@ -136,10 +141,15 @@ const Login = () => {
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
-                type="password"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="ddmmaaaa"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  const digitsOnly = e.target.value.replace(/\D/g, '');
+                  setPassword(digitsOnly);
+                }}
                 onFocus={handlePasswordFocus}
                 required
                 disabled={isLoading || isCheckingEmail}
@@ -149,9 +159,9 @@ const Login = () => {
                 <Alert className="border-primary/30 bg-primary/5">
                   <AlertCircle className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-sm">
-                    Use sua data de nascimento sem barras (ddmmaaaa).
+                    Digite apenas os 8 números da sua data de nascimento (ddmmaaaa).
                     <br />
-                    Exemplo: 15/08/1990 → 15081990
+                    Exemplo: 15 de agosto de 1990 → 15081990
                   </AlertDescription>
                 </Alert>
               )}

@@ -85,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      const hashedPassword = CryptoJS.SHA256(password).toString();
+      const hashedPassword = CryptoJS.SHA256(password.trim()).toString();
       
       // Try admin login first
       const { data: adminResult, error: adminError } = await supabase
