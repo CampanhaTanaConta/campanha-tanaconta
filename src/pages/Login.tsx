@@ -22,6 +22,7 @@ const Login = () => {
   const [emailChecked, setEmailChecked] = useState(false);
   const [showPasswordHint, setShowPasswordHint] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   // Check for ?debug=1 in URL and activate debug mode
   useEffect(() => {
@@ -61,6 +62,7 @@ const Login = () => {
     
     if (result.exists) {
       setParticipantName(result.name || '');
+      setIsAdminUser(result.isAdmin);
     } else {
       setError('not_registered');
       setPassword('');
@@ -70,6 +72,13 @@ const Login = () => {
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     
+    // If admin, accept any password without formatting
+    if (isAdminUser) {
+      setPassword(value);
+      return;
+    }
+    
+    // For participants, format as DD/MM/AAAA
     // Remove non-numeric characters except slashes
     value = value.replace(/[^\d/]/g, '');
     
@@ -112,7 +121,7 @@ const Login = () => {
     e.preventDefault();
     
     if (debugMode) {
-      console.warn('🚀 LOGIN SUBMIT CLICADO', { email, password, passwordLength: password.length });
+      console.warn('🚀 LOGIN SUBMIT CLICADO', { email, password, passwordLength: password.length, isAdmin: isAdminUser });
     }
     
     if (!emailChecked) {
@@ -121,16 +130,26 @@ const Login = () => {
       return;
     }
     
-    if (password.length !== 10) {
-      setError('A senha deve estar no formato DD/MM/AAAA (10 caracteres).');
-      if (debugMode) console.error('❌ Senha com tamanho errado', { length: password.length });
-      return;
-    }
+    // For participants, validate date format
+    if (!isAdminUser) {
+      if (password.length !== 10) {
+        setError('A senha deve estar no formato DD/MM/AAAA (10 caracteres).');
+        if (debugMode) console.error('❌ Senha com tamanho errado', { length: password.length });
+        return;
+      }
 
-    if (!validateDateFormat(password)) {
-      setError('Data inválida. Use o formato DD/MM/AAAA (ex: 10/05/1984).');
-      if (debugMode) console.error('❌ Formato de data inválido', { password });
-      return;
+      if (!validateDateFormat(password)) {
+        setError('Data inválida. Use o formato DD/MM/AAAA (ex: 10/05/1984).');
+        if (debugMode) console.error('❌ Formato de data inválido', { password });
+        return;
+      }
+    } else {
+      // For admins, just check if password is not empty
+      if (!password.trim()) {
+        setError('Por favor, digite sua senha');
+        if (debugMode) console.error('❌ Senha vazia');
+        return;
+      }
     }
     
     setIsLoading(true);
@@ -144,7 +163,7 @@ const Login = () => {
       if (result.error === 'not_registered') {
         setError('not_registered');
       } else {
-        setError(result.error || 'Erro ao fazer login');
+        setError(result.error || (isAdminUser ? 'Senha incorreta' : 'Data de nascimento incorreta'));
       }
       setIsLoading(false);
     }
@@ -230,17 +249,17 @@ const Login = () => {
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
-                type="text"
-                inputMode="numeric"
-                placeholder="DD/MM/AAAA"
+                type={isAdminUser ? "password" : "text"}
+                inputMode={isAdminUser ? "text" : "numeric"}
+                placeholder={isAdminUser ? "Digite sua senha" : "DD/MM/AAAA"}
                 value={password}
                 onChange={handlePasswordChange}
                 onFocus={handlePasswordFocus}
                 required
                 disabled={isLoading || isCheckingEmail}
-                maxLength={10}
+                maxLength={isAdminUser ? undefined : 10}
               />
-              {showPasswordHint && (
+              {showPasswordHint && !isAdminUser && (
                 <Alert className="border-primary/30 bg-primary/5">
                   <AlertCircle className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-sm">
