@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ const Login = () => {
   const [emailChecked, setEmailChecked] = useState(false);
   const [showPasswordHint, setShowPasswordHint] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   // Check for ?debug=1 in URL and activate debug mode
   useEffect(() => {
@@ -65,6 +66,11 @@ const Login = () => {
       setError('not_registered');
       setPassword('');
     }
+    
+    // Restore focus to password field after email check
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 0);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +235,7 @@ const Login = () => {
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
+                ref={passwordInputRef}
                 id="password"
                 type="text"
                 inputMode="numeric"
