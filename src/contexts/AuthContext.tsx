@@ -87,6 +87,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const normalizedEmail = email.trim().toLowerCase();
       const hashedPassword = CryptoJS.SHA256(password.trim()).toString();
       
+      // DEBUG MODE - Only active when localStorage.DEBUG_LOGIN === "1"
+      if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
+        console.group('🔍 LOGIN DEBUG');
+        console.log('📧 Email (normalized):', normalizedEmail);
+        console.log('🔑 Password info:', {
+          raw: password,
+          length: password.length,
+          charCodes: Array.from(password).map(c => c.charCodeAt(0)),
+          hasSpaces: password !== password.trim(),
+          trimmedLength: password.trim().length
+        });
+        
+        const rawHash = CryptoJS.SHA256(password).toString();
+        const trimmedHash = CryptoJS.SHA256(password.trim()).toString();
+        console.log('🔐 Hashes:', {
+          rawHash,
+          trimmedHash,
+          usedHash: hashedPassword,
+          hashesMatch: rawHash === trimmedHash
+        });
+      }
+      
       // Try admin login first
       const { data: adminResult, error: adminError } = await supabase
         .rpc('verify_admin_login', {
@@ -94,6 +116,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           p_password_hash: hashedPassword
         })
         .single();
+
+      if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
+        console.log('👤 Admin RPC result:', { adminResult, adminError });
+      }
 
       if (!adminError && adminResult && adminResult.is_valid) {
         // Set session variables in database for RLS policies
@@ -120,6 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           p_birth_hash: hashedPassword
         })
         .single();
+
+      if (typeof window !== 'undefined' && localStorage.getItem('DEBUG_LOGIN') === '1') {
+        console.log('👥 Participant RPC result:', { participantResult, participantError });
+        console.groupEnd();
+      }
 
       if (participantError) {
         console.error('Error verifying login:', participantError);
