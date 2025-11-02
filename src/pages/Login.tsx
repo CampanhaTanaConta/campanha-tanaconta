@@ -29,6 +29,27 @@ const Login = () => {
       localStorage.setItem('DEBUG_LOGIN', '1');
       setDebugMode(true);
       console.warn('🔍 DEBUG MODE ATIVADO via URL');
+      
+      // Test hash formats to debug the stored hash
+      import('crypto-js').then(CryptoJS => {
+        const testDate = '10051984'; // Expected format
+        const variations = [
+          testDate,
+          '1984-05-10',
+          '1984-10-05', 
+          '05101984',
+          '19840510',
+          '19841005',
+        ];
+        
+        console.group('🔐 Testing Hash Variations');
+        variations.forEach(v => {
+          const hash = CryptoJS.default.SHA256(v).toString();
+          console.log(`"${v}" => ${hash}`);
+        });
+        console.log('\nStored hash: d70116a54b20b6af1a5729cb0da7ea3f9f3498e6e2f79fb83dbceaec2bc29d33');
+        console.groupEnd();
+      });
     } else if (localStorage.getItem('DEBUG_LOGIN') === '1') {
       setDebugMode(true);
     }
