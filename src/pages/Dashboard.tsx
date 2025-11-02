@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart } from 'lucide-react';
+import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
 import { ActivationChart } from '@/components/ActivationChart';
@@ -17,7 +17,6 @@ interface KPIData {
   premiacaoAtual: number;
   premiacaoEstimada: number;
   clientesAtivos: number;
-  ticketMedio: number;
 }
 
 interface ActivationData {
@@ -43,7 +42,6 @@ const Dashboard = () => {
     premiacaoAtual: 0,
     premiacaoEstimada: 0,
     clientesAtivos: 0,
-    ticketMedio: 0,
   });
   const [activationData, setActivationData] = useState<ActivationData>({
     totalClients: 0,
@@ -98,7 +96,6 @@ const Dashboard = () => {
         const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
         const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
         const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
-        const ticketMedio = vendas / transactions.length;
 
         // Calculate estimated award projection until 31/12/2025
         const startDate = new Date('2024-10-15');
@@ -119,7 +116,6 @@ const Dashboard = () => {
           premiacaoAtual,
           premiacaoEstimada,
           clientesAtivos,
-          ticketMedio,
         });
       }
 
@@ -308,16 +304,43 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-              <ShoppingCart className="h-5 w-5 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{formatCurrency(kpis.ticketMedio)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Valor médio por transação</p>
-            </CardContent>
-          </Card>
+          {kpis.vendas < 50000 ? (
+            <Card className="border-destructive/50 shadow-lg hover:shadow-xl transition-shadow bg-destructive/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-destructive">Status da Premiação</CardTitle>
+                <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive mb-2">
+                  Mínimo não atingido
+                </div>
+                <p className="text-xs font-medium text-destructive/90 mb-1">
+                  Faltam {formatCurrency(50000 - kpis.vendas)} para ativar seu cartão
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Mínimo: R$ 50.000,00 em vendas
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-success/50 shadow-lg hover:shadow-xl transition-shadow bg-success/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-success">Status da Premiação</CardTitle>
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success mb-2">
+                  🎉 Parabéns!
+                </div>
+                <p className="text-sm font-medium text-success">
+                  Você ativou o seu cartão!
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Meta de R$ 50.000,00 alcançada
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {activationData.totalClients > 0 && (
