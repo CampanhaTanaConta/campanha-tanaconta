@@ -39,6 +39,7 @@ const Dashboard = () => {
   const { participante, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdateDate, setLastUpdateDate] = useState<Date | null>(null);
   const [kpis, setKpis] = useState<KPIData>({
     vendas: 0,
     premiacaoAtual: 0,
@@ -109,6 +110,8 @@ const Dashboard = () => {
         const lastUpdateDate = transactions.length > 0
           ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
           : new Date();
+
+        setLastUpdateDate(lastUpdateDate);
 
         let premiacaoEstimada = premiacaoAtual;
         
@@ -260,6 +263,15 @@ const Dashboard = () => {
     }).format(value);
   };
 
+  const formatDate = (date: Date | null) => {
+    if (!date) return '--/--/----';
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-primary/5">
@@ -286,6 +298,16 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground">Olá, {participante}</p>
             </div>
           </div>
+          
+          <div className="flex flex-col items-end gap-1 mr-4">
+            <p className="text-sm font-medium text-foreground">
+              Dashboard atualizado em <span className="underline">{formatDate(lastUpdateDate)}</span>
+            </p>
+            <p className="text-xs text-muted-foreground italic">
+              Atualizado semanalmente
+            </p>
+          </div>
+          
           <div className="flex gap-4">
             {isAdmin && (
               <Button variant="outline" onClick={() => navigate('/admin')}>
