@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Phone, Mail, MapPin } from 'lucide-react';
 
 interface MonthlySales {
@@ -17,6 +18,8 @@ interface ActivatedClient {
   telefone: string;
   totalVendas: number;
   salesByMonth: MonthlySales;
+  hasSolarSales: boolean;
+  totalSolarSales: number;
 }
 
 interface ActivatedClientsTableProps {
@@ -56,6 +59,7 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                   <TableHead className="text-right">Nov/24</TableHead>
                   <TableHead className="text-right">Dez/24</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Energia Solar</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -100,6 +104,20 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="font-bold text-primary">{formatCurrency(client.totalVendas)}</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {client.hasSolarSales ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant="default" className="bg-accent text-accent-foreground">
+                            ☀️ Solar
+                          </Badge>
+                          <span className="font-medium text-accent">
+                            {formatCurrency(client.totalSolarSales)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

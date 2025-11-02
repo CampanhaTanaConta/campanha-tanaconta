@@ -31,6 +31,8 @@ interface ActivationData {
   activatedValue: number;
   inProgressValue: number;
   noSalesValue: number;
+  solarSalesClients: number;
+  nonSolarSalesClients: number;
 }
 
 const Dashboard = () => {
@@ -55,6 +57,8 @@ const Dashboard = () => {
     activatedValue: 0,
     inProgressValue: 0,
     noSalesValue: 0,
+    solarSalesClients: 0,
+    nonSolarSalesClients: 0,
   });
 
   useEffect(() => {
@@ -169,6 +173,25 @@ const Dashboard = () => {
           return acc;
         }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
 
+        // Calcular quais clientes venderam Energia Solar
+        const clientsWithSolarSales = new Set(
+          transactions
+            ?.filter(t => t.tipo_venda === 'Energia Solar')
+            .map(t => t.cliente_id) || []
+        );
+
+        const solarSalesClients = clientsWithSolarSales.size;
+        const nonSolarSalesClients = totalClients - solarSalesClients;
+
+        // Calcular vendas de Energia Solar por cliente
+        const solarSalesByClient = transactions?.reduce((acc, t) => {
+          if (t.tipo_venda === 'Energia Solar') {
+            const clientId = t.cliente_id;
+            acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+          }
+          return acc;
+        }, {} as Record<string, number>) || {};
+
         // Get pending clients details
         const pendingClientsList = departmentStore
           .filter(client => {
@@ -192,6 +215,8 @@ const Dashboard = () => {
             ...client,
             totalVendas: salesByClient[client.cliente_id] || 0,
             salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+            hasSolarSales: !!solarSalesByClient[client.cliente_id],
+            totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
           }))
           .sort((a, b) => b.totalVendas - a.totalVendas);
 
@@ -207,6 +232,8 @@ const Dashboard = () => {
           activatedValue,
           inProgressValue,
           noSalesValue,
+          solarSalesClients,
+          nonSolarSalesClients,
         });
       }
 
@@ -348,8 +375,9 @@ const Dashboard = () => {
             <ActivationStats
               totalClients={activationData.totalClients}
               activatedClients={activationData.activatedClients}
-              pendingClients={activationData.pendingClients}
               activationRate={activationData.activationRate}
+              solarSalesClients={activationData.solarSalesClients}
+              nonSolarSalesClients={activationData.nonSolarSalesClients}
             />
 
             <ActivationChart
