@@ -8,8 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
-import { ActivationChart } from '@/components/ActivationChart';
+import { MultiPurposeChart } from '@/components/MultiPurposeChart';
 import { ActivatedClientsTable } from '@/components/ActivatedClientsTable';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import logo from '@/assets/logo.png';
 
 interface KPIData {
@@ -33,6 +34,9 @@ interface ActivationData {
   noSalesValue: number;
   solarSalesClients: number;
   nonSolarSalesClients: number;
+  partners30kPlusCount: number;
+  partnersBelow30kCount: number;
+  notActivatedCount: number;
 }
 
 const Dashboard = () => {
@@ -60,6 +64,9 @@ const Dashboard = () => {
     noSalesValue: 0,
     solarSalesClients: 0,
     nonSolarSalesClients: 0,
+    partners30kPlusCount: 0,
+    partnersBelow30kCount: 0,
+    notActivatedCount: 0,
   });
 
   useEffect(() => {
@@ -162,6 +169,13 @@ const Dashboard = () => {
         
         const noSalesValue = 0; // Clientes sem vendas têm valor 0
 
+        // Calculate partners with R$30k+ in sales
+        const partners30kPlusCount = Object.values(salesByClient).filter(total => total >= 30000).length;
+        const partnersBelow30kCount = totalClients - partners30kPlusCount;
+
+        // Calculate not activated clients (including in progress and no sales)
+        const notActivatedCount = inProgressClients + noSalesClients;
+
         // Calculate monthly sales for each client
         const salesByClientAndMonth = transactions?.reduce((acc, t) => {
           const clientId = t.cliente_id;
@@ -241,6 +255,9 @@ const Dashboard = () => {
           noSalesValue,
           solarSalesClients,
           nonSolarSalesClients,
+          partners30kPlusCount,
+          partnersBelow30kCount,
+          notActivatedCount,
         });
       }
 
@@ -406,14 +423,94 @@ const Dashboard = () => {
               nonSolarSalesClients={activationData.nonSolarSalesClients}
             />
 
-            <ActivationChart
-              activatedCount={activationData.activatedClients}
-              inProgressCount={activationData.inProgressCount}
-              noSalesCount={activationData.noSalesCount}
-              activatedValue={activationData.activatedValue}
-              inProgressValue={activationData.inProgressValue}
-              noSalesValue={activationData.noSalesValue}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Status de Ativação</CardTitle>
+                  <CardDescription>Distribuição de clientes por status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { 
+                            name: 'Ativados (>R$500)', 
+                            value: activationData.activatedClients, 
+                            color: 'hsl(var(--success))',
+                            total: activationData.activatedValue
+                          },
+                          { 
+                            name: 'Em Progresso', 
+                            value: activationData.inProgressCount, 
+                            color: 'hsl(var(--warning))',
+                            total: activationData.inProgressValue
+                          },
+                          { 
+                            name: 'Sem Vendas', 
+                            value: activationData.noSalesCount, 
+                            color: 'hsl(var(--muted))',
+                            total: activationData.noSalesValue
+                          },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                          const pieData = [
+                            { total: activationData.activatedValue },
+                            { total: activationData.inProgressValue },
+                            { total: activationData.noSalesValue }
+                          ];
+                          const RADIAN = Math.PI / 180;
+                          const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                          
+                          return (
+                            <text 
+                              x={x} 
+                              y={y} 
+                              fill="white" 
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fontSize={12}
+                              fontWeight={600}
+                            >
+                              <tspan x={x} dy={0}>{`${(percent * 100).toFixed(0)}%`}</tspan>
+                              <tspan x={x} dy={14} fontSize={10}>
+                                {formatCurrency(pieData[index].total)}
+                              </tspan>
+                            </text>
+                          );
+                        }}
+                        outerRadius={90}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          { color: 'hsl(var(--success))' },
+                          { color: 'hsl(var(--warning))' },
+                          { color: 'hsl(var(--muted))' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <MultiPurposeChart
+                activatedCount={activationData.activatedClients}
+                notActivatedCount={activationData.notActivatedCount}
+                solarClientsCount={activationData.solarSalesClients}
+                nonSolarClientsCount={activationData.nonSolarSalesClients}
+                partners30kPlusCount={activationData.partners30kPlusCount}
+                partnersBelow30kCount={activationData.partnersBelow30kCount}
+              />
+            </div>
 
             <PendingClientsTable clients={activationData.pendingClientsList} />
 
