@@ -558,7 +558,7 @@ const Dashboard = () => {
           </>
         )}
 
-        {kpis.clientesAtivos === 0 && (
+        {kpis.clientesAtivos === 0 && !isAdmin && (
           <Card>
             <CardHeader>
               <CardTitle>Bem-vindo!</CardTitle>
