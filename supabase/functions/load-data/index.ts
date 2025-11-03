@@ -59,9 +59,11 @@ Deno.serve(async (req) => {
           const response = await fetch(participantsUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: true });
+        const records = parse(csvText, { skipFirstRow: false });
 
-        for (const record of records) {
+        // Skip header row manually (start from index 1)
+        for (let i = 1; i < records.length; i++) {
+          const record = records[i];
           const email = String(record[4] || '').trim().toLowerCase();
           const participante = String(record[2] || '').trim();
           const nascimento = String(record[5] || '').trim();
@@ -107,12 +109,14 @@ Deno.serve(async (req) => {
           const response = await fetch(walletUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: true });
+        const records = parse(csvText, { skipFirstRow: false });
 
         // Clear existing wallet data
         await supabaseClient.from('wallet').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-        for (const record of records) {
+        // Skip header row manually (start from index 1)
+        for (let i = 1; i < records.length; i++) {
+          const record = records[i];
           const clienteNome = String(record[0] || '').trim();
           const clienteId = String(record[1] || '').trim();
           const participante = String(record[3] || '').trim();
@@ -143,12 +147,14 @@ Deno.serve(async (req) => {
           const response = await fetch(transactionsUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: true });
+        const records = parse(csvText, { skipFirstRow: false });
 
         // Clear existing transactions
         await supabaseClient.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-        for (const record of records) {
+        // Skip header row manually (start from index 1)
+        for (let i = 1; i < records.length; i++) {
+          const record = records[i];
           const clienteId = String(record[4] || '').trim();
           const dataTransacao = String(record[6] || '').trim();
           const tipoVenda = String(record[14] || '').trim();
@@ -201,7 +207,7 @@ Deno.serve(async (req) => {
           const response = await fetch(departmentStoreUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: true });
+        const records = parse(csvText, { skipFirstRow: false });
         console.log('[Department Store] Parsed records:', records.length);
 
         // Clear existing department store data
@@ -209,7 +215,9 @@ Deno.serve(async (req) => {
 
         let processedCount = 0;
         let skippedCount = 0;
-        for (const record of records) {
+        // Skip header row manually (start from index 1)
+        for (let i = 1; i < records.length; i++) {
+          const record = records[i];
           const clienteId = String(record[0] || '').trim(); // ID
           const idExterno = String(record[1] || '').trim();
           const tipoPessoa = String(record[2] || '').trim();
