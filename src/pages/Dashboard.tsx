@@ -240,8 +240,8 @@ const Dashboard = () => {
           const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
           const partnersBelow30kCount = totalClients - partners30kPlusCount;
 
-          // Calculate not activated clients (including in progress and no sales)
-          const notActivatedCount = inProgressClients + noSalesClients;
+          // Calculate not activated clients (total minus activated)
+          const notActivatedCount = totalClients - activatedClients;
 
           // Calculate monthly sales for each client
           const salesByClientAndMonth = transactions?.reduce((acc, t) => {
@@ -410,8 +410,8 @@ const Dashboard = () => {
           const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
           const partnersBelow30kCount = totalClients - partners30kPlusCount;
 
-          // Calculate not activated clients (including in progress and no sales)
-          const notActivatedCount = inProgressClients + noSalesClients;
+          // Calculate not activated clients (total minus activated)
+          const notActivatedCount = totalClients - activatedClients;
 
           // Calculate monthly sales for each client
           const salesByClientAndMonth = transactions?.reduce((acc, t) => {
