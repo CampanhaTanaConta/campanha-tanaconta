@@ -92,10 +92,11 @@ const Dashboard = () => {
 
       if (rpcError) throw rpcError;
 
-      // Extract data from RPC response
-      const wallet = dashboardSlices?.wallet || [];
-      const transactions = dashboardSlices?.transactions || [];
-      const departmentStore = dashboardSlices?.department_store || [];
+      // Extract data from RPC response with proper typing
+      const responseData = dashboardSlices as any;
+      const wallet: Array<{ cliente_id: string }> = responseData?.wallet || [];
+      const transactions: Array<any> = responseData?.transactions || [];
+      const departmentStore: Array<any> = responseData?.department_store || [];
 
       // Optional debug logging (only when ?debug=1 in URL)
       if (window.location.search.includes('debug=1')) {
@@ -106,7 +107,7 @@ const Dashboard = () => {
         });
       }
 
-      const clienteIds = wallet?.map((w: any) => w.cliente_id) || [];
+      const clienteIds = wallet?.map((w) => w.cliente_id) || [];
 
       if (clienteIds.length === 0) {
         setIsLoading(false);
@@ -156,24 +157,24 @@ const Dashboard = () => {
           return acc;
         }, {} as Record<string, number>) || {};
 
-        const activatedClients = Object.values(salesByClient).filter(total => total > 500).length;
-        const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => total > 0 && total <= 500).length;
+        const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
+        const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
         const totalClients = departmentStore.length;
         const noSalesClients = totalClients - Object.keys(salesByClient).length;
 
         // Calculate total sales values by status
-        const activatedValue = Object.values(salesByClient)
-          .filter(total => total > 500)
-          .reduce((sum, val) => sum + val, 0);
+        const activatedValue = (Object.values(salesByClient)
+          .filter((total: number) => total > 500)
+          .reduce((sum: number, val) => sum + (val as number), 0)) as number;
         
-        const inProgressValue = Object.entries(salesByClient)
-          .filter(([_, total]) => total > 0 && total <= 500)
-          .reduce((sum, [_, val]) => sum + val, 0);
+        const inProgressValue = (Object.entries(salesByClient)
+          .filter(([_, total]) => (total as number) > 0 && (total as number) <= 500)
+          .reduce((sum: number, [_, val]) => sum + (val as number), 0)) as number;
         
         const noSalesValue = 0; // Revendas sem vendas têm valor 0
 
         // Calculate partners with R$30k+ in sales
-        const partners30kPlusCount = Object.values(salesByClient).filter(total => total >= 30000).length;
+        const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
         const partnersBelow30kCount = totalClients - partners30kPlusCount;
 
         // Calculate not activated clients (including in progress and no sales)

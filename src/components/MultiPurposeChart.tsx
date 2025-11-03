@@ -96,20 +96,20 @@ export const MultiPurposeChart = ({
         <CardDescription>Comparativo de métricas principais</CardDescription>
       </CardHeader>
       <CardContent>
-        <Legend 
-          content={renderLegend}
-          verticalAlign="top"
-          height={50}
-        />
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <BarChart 
             data={chartData}
-            margin={{ top: 0, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="categoria" />
             <YAxis />
-            <Tooltip 
+            <Legend 
+              content={renderLegend}
+              verticalAlign="top"
+              height={50}
+            />
+            <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const total = payload.reduce((sum, entry) => sum + (entry.value as number), 0);
