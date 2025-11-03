@@ -423,8 +423,8 @@ const Admin = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>📊 URLs das Planilhas</CardTitle>
-                <CardDescription>Informe as URLs públicas das planilhas ou faça upload dos arquivos CSV</CardDescription>
+                <CardTitle>📊 Atualizar banco de dados</CardTitle>
+                <CardDescription>Arraste os arquivos CSV ou Informe as URLs públicas das planilhas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Área de Drag and Drop */}
