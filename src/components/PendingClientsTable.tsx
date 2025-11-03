@@ -58,8 +58,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Revenda</TableHead>
-                  <TableHead>Localização</TableHead>
-                  <TableHead>Contato</TableHead>
+                  <TableHead>Clique, faça contato e aumente seu prêmio</TableHead>
                   <TableHead>Total Vendas</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -71,12 +70,6 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                       <div>
                         <p className="font-semibold">{client.nome}</p>
                         <p className="text-xs text-muted-foreground">ID: {client.cliente_id}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm">{client.cidade}, {client.uf}</span>
                       </div>
                     </TableCell>
                     <TableCell>
