@@ -428,7 +428,7 @@ const Admin = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>📊 URLs das Planilhas</CardTitle>
+                <CardTitle>📊 Atualização do banco de dados</CardTitle>
                 <CardDescription>Informe as URLs públicas das planilhas ou faça upload dos arquivos CSV</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
