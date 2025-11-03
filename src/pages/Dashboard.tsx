@@ -752,8 +752,6 @@ const Dashboard = () => {
               />
             </div>
 
-            <PendingClientsTable clients={activationData.pendingClientsList} />
-
             <ActivatedClientsTable clients={activationData.activatedClientsList} />
           </>
         )}
@@ -772,8 +770,21 @@ const Dashboard = () => {
 
             <ParticipantsOverviewTable data={adminParticipantsData} />
             
+            <div className="border-l-4 border-primary pl-4 mt-8">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                🏢 Performance dos Distribuidores
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Dados consolidados por distribuidor
+              </p>
+            </div>
+
             <DistributorsTable data={adminDistributorsData} />
           </div>
+        )}
+
+        {kpis.clientesAtivos > 0 && (
+          <PendingClientsTable clients={activationData.pendingClientsList} />
         )}
 
         {kpis.clientesAtivos === 0 && !isAdmin && (
