@@ -212,11 +212,8 @@ const Dashboard = () => {
         }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
 
         // Calcular quais revendas venderam Energia Solar
-        const clientsWithSolarSales = new Set(
-          transactions
-            ?.filter(t => t.tipo_venda === 'Energia Solar')
-            .map(t => t.cliente_id) || []
-        );
+        const solarArray = (transactions ?? []).filter(t => t.tipo_venda === 'Energia Solar').map(t => t.cliente_id);
+        const clientsWithSolarSales = new Set(solarArray);
 
         const solarSalesClients = clientsWithSolarSales.size;
         const nonSolarSalesClients = totalClients - solarSalesClients;

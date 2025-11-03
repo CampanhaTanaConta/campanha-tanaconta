@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface MultiPurposeChartProps {
   activatedCount: number;
@@ -67,27 +67,6 @@ export const MultiPurposeChart = ({
     );
   };
 
-  const renderLegend = (props: any) => {
-    const { payload } = props;
-    return (
-      <div className="flex justify-center gap-6 mb-4">
-        {payload.map((entry: any, index: number) => {
-          const isPositive = entry.value === 'Ativados' || entry.value === 'Com Solar' || entry.value === '≥ R$30k';
-          const bgColor = isPositive ? 'bg-success' : 'bg-muted';
-          const textColor = isPositive ? 'text-white' : 'text-muted-foreground';
-          
-          return (
-            <div key={`legend-${index}`} className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded ${bgColor}`} />
-              <span className={`text-sm font-medium ${textColor}`}>
-                {entry.value}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <Card>
@@ -96,11 +75,32 @@ export const MultiPurposeChart = ({
         <CardDescription>Comparativo de métricas principais</CardDescription>
       </CardHeader>
       <CardContent>
-        <Legend 
-          content={renderLegend}
-          verticalAlign="top"
-          height={50}
-        />
+        <div className="flex justify-center gap-6 mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-success" />
+            <span className="text-sm font-medium text-white">Ativados</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-muted" />
+            <span className="text-sm font-medium text-muted-foreground">Não Ativados</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-success" />
+            <span className="text-sm font-medium text-white">Com Solar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-muted" />
+            <span className="text-sm font-medium text-muted-foreground">Sem Solar</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-success" />
+            <span className="text-sm font-medium text-white">≥ R$30k</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded bg-muted" />
+            <span className="text-sm font-medium text-muted-foreground">&lt; R$30k</span>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart 
             data={chartData}
