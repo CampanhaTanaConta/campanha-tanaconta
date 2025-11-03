@@ -199,6 +199,7 @@ export type Database = {
           cliente_id: string
           cliente_nome: string
           created_at: string | null
+          distribuidor: string | null
           id: string
           participante: string
         }
@@ -206,6 +207,7 @@ export type Database = {
           cliente_id: string
           cliente_nome: string
           created_at?: string | null
+          distribuidor?: string | null
           id?: string
           participante: string
         }
@@ -213,6 +215,7 @@ export type Database = {
           cliente_id?: string
           cliente_nome?: string
           created_at?: string | null
+          distribuidor?: string | null
           id?: string
           participante?: string
         }
