@@ -359,14 +359,17 @@ Deno.serve(async (req) => {
           for (let i = 1; i < records.length; i++) {
             const record = records[i];
             const clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
+            const cpfRaw = idxCpf >= 0 ? String(record[idxCpf] || '').trim() : '';
             const idExterno = idxIdExterno >= 0 ? String(record[idxIdExterno] || '').trim() : '';
             const nome = idxNome >= 0 ? String(record[idxNome] || '').trim() : '';
 
-            const clienteId = normalizeCnpj(clienteIdRaw);
+            // Use CPF as fallback if CNPJ is empty
+            const documentoRaw = clienteIdRaw || cpfRaw;
+            const clienteId = normalizeCnpj(documentoRaw);
 
             if (!clienteId || !nome) {
               skippedCount++;
-              console.log('[Department Store] Skipping row', i, '- missing CNPJ or nome');
+              console.log('[Department Store] Skipping row', i, '- missing CNPJ/CPF or nome');
               continue;
             }
 
