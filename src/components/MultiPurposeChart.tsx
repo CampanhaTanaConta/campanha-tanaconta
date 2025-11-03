@@ -8,6 +8,7 @@ interface MultiPurposeChartProps {
   nonSolarClientsCount: number;
   partners30kPlusCount: number;
   partnersBelow30kCount: number;
+  totalCount?: number;
 }
 
 export const MultiPurposeChart = ({ 
@@ -16,23 +17,37 @@ export const MultiPurposeChart = ({
   solarClientsCount,
   nonSolarClientsCount,
   partners30kPlusCount,
-  partnersBelow30kCount
+  partnersBelow30kCount,
+  totalCount
 }: MultiPurposeChartProps) => {
+  // Calculate complementary values when totalCount is provided
+  const computedNotActivated = totalCount !== undefined 
+    ? Math.max(totalCount - activatedCount, 0)
+    : notActivatedCount;
+  
+  const computedNonSolar = totalCount !== undefined
+    ? Math.max(totalCount - solarClientsCount, 0)
+    : nonSolarClientsCount;
+  
+  const computedBelow30k = totalCount !== undefined
+    ? Math.max(totalCount - partners30kPlusCount, 0)
+    : partnersBelow30kCount;
+
   const chartData = [
     {
       categoria: 'Ativação',
       'Ativados': activatedCount,
-      'Não Ativados': notActivatedCount,
+      'Não Ativados': computedNotActivated,
     },
     {
       categoria: 'Energia Solar',
       'Com Solar': solarClientsCount,
-      'Sem Solar': nonSolarClientsCount,
+      'Sem Solar': computedNonSolar,
     },
     {
       categoria: 'Parceiros R$30k+',
       '≥ R$30k': partners30kPlusCount,
-      '< R$30k': partnersBelow30kCount,
+      '< R$30k': computedBelow30k,
     }
   ];
 

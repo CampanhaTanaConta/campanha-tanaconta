@@ -749,6 +749,7 @@ const Dashboard = () => {
                 nonSolarClientsCount={activationData.nonSolarSalesClients}
                 partners30kPlusCount={activationData.partners30kPlusCount}
                 partnersBelow30kCount={activationData.partnersBelow30kCount}
+                totalCount={activationData.totalClients}
               />
             </div>
 
