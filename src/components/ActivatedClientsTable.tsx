@@ -66,7 +66,8 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
               <TableHeader>
                 <TableRow>
                   <TableHead>Revenda</TableHead>
-                  <TableHead>Clique, faça contato e aumente seu prêmio</TableHead>
+                  <TableHead>Localização</TableHead>
+                  <TableHead>Contato</TableHead>
                   <TableHead className="text-right">Out/24</TableHead>
                   <TableHead className="text-right">Nov/24</TableHead>
                   <TableHead className="text-right">Dez/24</TableHead>
@@ -81,6 +82,12 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                       <div>
                         <p className="font-semibold">{client.nome}</p>
                         <p className="text-xs text-muted-foreground">ID: {client.cliente_id}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">{client.cidade}, {client.uf}</span>
                       </div>
                     </TableCell>
                     <TableCell>
