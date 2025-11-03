@@ -122,9 +122,17 @@ const Dashboard = () => {
           .limit(1)
           .maybeSingle();
         
-        currentLastUpdateDate = lastUpdate?.created_at
-          ? new Date(lastUpdate.created_at)
-          : new Date();
+        if (lastUpdate?.created_at) {
+          // Extrair data em UTC para evitar conversão de timezone
+          const tempDate = new Date(lastUpdate.created_at);
+          currentLastUpdateDate = new Date(Date.UTC(
+            tempDate.getUTCFullYear(),
+            tempDate.getUTCMonth(),
+            tempDate.getUTCDate()
+          ));
+        } else {
+          currentLastUpdateDate = new Date();
+        }
       } catch (error) {
         console.warn('Erro ao buscar data de atualização:', error);
         currentLastUpdateDate = new Date();
@@ -155,8 +163,8 @@ const Dashboard = () => {
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
           // Calculate estimated award projection until 31/12/2025
-          const startDate = new Date('2025-10-15');
-          const endDate = new Date('2025-12-31');
+          const startDate = new Date(Date.UTC(2025, 9, 15)); // 15/10/2025 em UTC (mês 9 = outubro)
+          const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
           
           let premiacaoEstimada = premiacaoAtual;
           let vendasEstimadas = vendas;
@@ -325,8 +333,8 @@ const Dashboard = () => {
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
           // Calculate estimated award projection until 31/12/2025
-          const startDate = new Date('2025-10-15');
-          const endDate = new Date('2025-12-31');
+          const startDate = new Date(Date.UTC(2025, 9, 15)); // 15/10/2025 em UTC (mês 9 = outubro)
+          const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
           
           let premiacaoEstimada = premiacaoAtual;
           let vendasEstimadas = vendas;
