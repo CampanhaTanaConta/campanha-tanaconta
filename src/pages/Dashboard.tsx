@@ -663,21 +663,6 @@ const Dashboard = () => {
               nonSolarSalesClients={activationData.nonSolarSalesClients}
             />
 
-            {isAdmin && (
-              <div className="space-y-6">
-                <div className="border-l-4 border-primary pl-4">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    🏢 Performance dos Distribuidores
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Dados consolidados por distribuidor
-                  </p>
-                </div>
-
-                <DistributorsTable data={adminDistributorsData} />
-              </div>
-            )}
-
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -766,6 +751,21 @@ const Dashboard = () => {
                 partnersBelow30kCount={activationData.partnersBelow30kCount}
               />
             </div>
+
+            {isAdmin && (
+              <div className="space-y-6">
+                <div className="border-l-4 border-primary pl-4">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">
+                    🏢 Performance dos Distribuidores
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Dados consolidados por distribuidor
+                  </p>
+                </div>
+
+                <DistributorsTable data={adminDistributorsData} />
+              </div>
+            )}
 
             <ActivatedClientsTable clients={activationData.activatedClientsList} />
           </>
