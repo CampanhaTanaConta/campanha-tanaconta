@@ -92,7 +92,7 @@ export const MultiPurposeChart = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Análise da carteira</CardTitle>
+        <CardTitle>Análise Multi-Uso</CardTitle>
         <CardDescription>Comparativo de métricas principais</CardDescription>
       </CardHeader>
       <CardContent>
