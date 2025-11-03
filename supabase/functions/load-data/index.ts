@@ -13,6 +13,10 @@ interface LoadDataRequest {
   walletUrl?: string;
   transactionsUrl?: string;
   departmentStoreUrl?: string;
+  participantsContent?: string;
+  walletContent?: string;
+  transactionsContent?: string;
+  departmentStoreContent?: string;
 }
 
 Deno.serve(async (req) => {
@@ -26,7 +30,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { participantsUrl, walletUrl, transactionsUrl, departmentStoreUrl }: LoadDataRequest = await req.json();
+    const { 
+      participantsUrl, 
+      walletUrl, 
+      transactionsUrl, 
+      departmentStoreUrl,
+      participantsContent,
+      walletContent,
+      transactionsContent,
+      departmentStoreContent
+    }: LoadDataRequest = await req.json();
 
     const results = {
       participants: 0,
@@ -37,10 +50,15 @@ Deno.serve(async (req) => {
     };
 
     // Load participants data
-    if (participantsUrl) {
+    if (participantsContent || participantsUrl) {
       try {
-        const response = await fetch(participantsUrl);
-        const csvText = await response.text();
+        let csvText: string;
+        if (participantsContent) {
+          csvText = participantsContent;
+        } else {
+          const response = await fetch(participantsUrl!);
+          csvText = await response.text();
+        }
         const records = parse(csvText, { skipFirstRow: true });
 
         for (const record of records) {
@@ -80,10 +98,15 @@ Deno.serve(async (req) => {
     }
 
     // Load wallet data
-    if (walletUrl) {
+    if (walletContent || walletUrl) {
       try {
-        const response = await fetch(walletUrl);
-        const csvText = await response.text();
+        let csvText: string;
+        if (walletContent) {
+          csvText = walletContent;
+        } else {
+          const response = await fetch(walletUrl!);
+          csvText = await response.text();
+        }
         const records = parse(csvText, { skipFirstRow: true });
 
         // Clear existing wallet data
@@ -111,10 +134,15 @@ Deno.serve(async (req) => {
     }
 
     // Load transactions data
-    if (transactionsUrl) {
+    if (transactionsContent || transactionsUrl) {
       try {
-        const response = await fetch(transactionsUrl);
-        const csvText = await response.text();
+        let csvText: string;
+        if (transactionsContent) {
+          csvText = transactionsContent;
+        } else {
+          const response = await fetch(transactionsUrl!);
+          csvText = await response.text();
+        }
         const records = parse(csvText, { skipFirstRow: true });
 
         // Clear existing transactions
@@ -162,10 +190,15 @@ Deno.serve(async (req) => {
     }
 
     // Load department store data
-    if (departmentStoreUrl) {
+    if (departmentStoreContent || departmentStoreUrl) {
       try {
-        const response = await fetch(departmentStoreUrl);
-        const csvText = await response.text();
+        let csvText: string;
+        if (departmentStoreContent) {
+          csvText = departmentStoreContent;
+        } else {
+          const response = await fetch(departmentStoreUrl!);
+          csvText = await response.text();
+        }
         const records = parse(csvText, { skipFirstRow: true });
 
         // Clear existing department store data

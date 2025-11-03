@@ -222,7 +222,7 @@ const Dashboard = () => {
 
           const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
           const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
-          const totalClients = departmentStore.length;
+          const totalClients = new Set(departmentStore.map((c: any) => c.cliente_id)).size;
           const noSalesClients = totalClients - Object.keys(salesByClient).length;
 
           // Calculate total sales values by status
@@ -392,7 +392,7 @@ const Dashboard = () => {
 
           const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
           const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
-          const totalClients = departmentStore.length;
+          const totalClients = new Set(departmentStore.map((c: any) => c.cliente_id)).size;
           const noSalesClients = totalClients - Object.keys(salesByClient).length;
 
           // Calculate total sales values by status

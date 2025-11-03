@@ -3,10 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface LoadDataRequest {
-  participantsUrl: string;
-  walletUrl: string;
-  transactionsUrl: string;
-  departmentStoreUrl: string;
+  participantsUrl?: string;
+  walletUrl?: string;
+  transactionsUrl?: string;
+  departmentStoreUrl?: string;
+  participantsContent?: string;
+  walletContent?: string;
+  transactionsContent?: string;
+  departmentStoreContent?: string;
 }
 
 interface LoadDataResponse {

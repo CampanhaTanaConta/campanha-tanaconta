@@ -232,22 +232,32 @@ const Admin = () => {
       departmentStoreUrl,
     }));
 
-    // Construir payload com arquivos carregados ou URLs
+    // Construir payload com conteúdo dos arquivos ou URLs
     const payload: any = {};
     
-    // Adicionar Blob URLs dos arquivos carregados
-    uploadedFiles.forEach(uf => {
-      if (uf.type === 'participants') payload.participantsUrl = uf.blobUrl;
-      if (uf.type === 'wallet') payload.walletUrl = uf.blobUrl;
-      if (uf.type === 'transactions') payload.transactionsUrl = uf.blobUrl;
-      if (uf.type === 'departmentStore') payload.departmentStoreUrl = uf.blobUrl;
-    });
+    // Ler conteúdo dos arquivos carregados
+    for (const uf of uploadedFiles) {
+      try {
+        const content = await uf.file.text();
+        if (uf.type === 'participants') payload.participantsContent = content;
+        if (uf.type === 'wallet') payload.walletContent = content;
+        if (uf.type === 'transactions') payload.transactionsContent = content;
+        if (uf.type === 'departmentStore') payload.departmentStoreContent = content;
+      } catch (error) {
+        toast({
+          title: "Erro ao ler arquivo",
+          description: `Não foi possível ler ${uf.file.name}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     // Adicionar URLs do Google Sheets (se não foram substituídas por arquivos)
-    if (participantsUrl && !payload.participantsUrl) payload.participantsUrl = participantsUrl;
-    if (walletUrl && !payload.walletUrl) payload.walletUrl = walletUrl;
-    if (transactionsUrl && !payload.transactionsUrl) payload.transactionsUrl = transactionsUrl;
-    if (departmentStoreUrl && !payload.departmentStoreUrl) payload.departmentStoreUrl = departmentStoreUrl;
+    if (participantsUrl && !payload.participantsContent) payload.participantsUrl = participantsUrl;
+    if (walletUrl && !payload.walletContent) payload.walletUrl = walletUrl;
+    if (transactionsUrl && !payload.transactionsContent) payload.transactionsUrl = transactionsUrl;
+    if (departmentStoreUrl && !payload.departmentStoreContent) payload.departmentStoreUrl = departmentStoreUrl;
 
     // Verificar se há pelo menos uma fonte de dados
     if (Object.keys(payload).length === 0) {
