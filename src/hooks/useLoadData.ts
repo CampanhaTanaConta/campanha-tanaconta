@@ -19,6 +19,11 @@ interface LoadDataResponse {
   transactions: number;
   departmentStore: number;
   errors: string[];
+  stats: {
+    walletIds: number;
+    txIds: number;
+    intersection: number;
+  };
 }
 
 export const useLoadData = () => {
@@ -39,9 +44,13 @@ export const useLoadData = () => {
 
       setResult(data);
       
+      const statsMessage = data.stats 
+        ? ` | CNPJs: ${data.stats.walletIds} carteira, ${data.stats.txIds} transações, ${data.stats.intersection} correspondências`
+        : '';
+      
       toast({
         title: "Dados carregados com sucesso!",
-        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.departmentStore} estabelecimentos`,
+        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.departmentStore} estabelecimentos${statsMessage}`,
       });
 
       return data;
