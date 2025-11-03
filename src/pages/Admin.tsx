@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { participante, isAdmin, logout } = useAuth();
+  const { participante, isAdmin, logout, isLoading: authLoading } = useAuth();
   const { loadData, isLoading, result } = useLoadData();
 
   const [participantsUrl, setParticipantsUrl] = useState('');
@@ -41,6 +41,11 @@ const Admin = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return;
+    }
+    
     if (!participante) {
       navigate('/login');
       return;
@@ -64,7 +69,7 @@ const Admin = () => {
         console.error('Error loading saved URLs:', e);
       }
     }
-  }, [participante, isAdmin, navigate]);
+  }, [participante, isAdmin, authLoading, navigate]);
 
   // Função para identificar tipo de arquivo pelo nome
   const identifyFileType = (fileName: string): 'participants' | 'wallet' | 'transactions' | 'departmentStore' | null => {

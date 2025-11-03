@@ -40,7 +40,7 @@ interface ActivationData {
 }
 
 const Dashboard = () => {
-  const { participante, isAdmin, logout } = useAuth();
+  const { participante, isAdmin, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdateDate, setLastUpdateDate] = useState<Date | null>(null);
@@ -70,13 +70,18 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (authLoading) {
+      return;
+    }
+    
     if (!participante) {
       navigate('/login');
       return;
     }
 
     fetchDashboardData();
-  }, [participante, navigate]);
+  }, [participante, authLoading, navigate]);
 
   const fetchDashboardData = async () => {
     try {
@@ -289,7 +294,7 @@ const Dashboard = () => {
     }).format(date);
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-primary/5">
         <div className="container mx-auto p-6">
