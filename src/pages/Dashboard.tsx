@@ -651,24 +651,6 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Admin-only sections */}
-        {isAdmin && (
-          <div className="space-y-6">
-            <div className="border-l-4 border-primary pl-4">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                🔒 Visão Global do Administrador
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Dados consolidados de todos os participantes e distribuidores
-              </p>
-            </div>
-
-            <ParticipantsOverviewTable data={adminParticipantsData} />
-            
-            <DistributorsTable data={adminDistributorsData} />
-          </div>
-        )}
-
         {activationData.totalClients > 0 && (
           <>
             <ActivationStats
@@ -772,6 +754,24 @@ const Dashboard = () => {
 
             <ActivatedClientsTable clients={activationData.activatedClientsList} />
           </>
+        )}
+
+        {/* Admin-only sections */}
+        {isAdmin && (
+          <div className="space-y-6">
+            <div className="border-l-4 border-primary pl-4">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                📊 Performance dos Participantes
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Dados consolidados de todos os participantes e distribuidores
+              </p>
+            </div>
+
+            <ParticipantsOverviewTable data={adminParticipantsData} />
+            
+            <DistributorsTable data={adminDistributorsData} />
+          </div>
         )}
 
         {kpis.clientesAtivos === 0 && !isAdmin && (
