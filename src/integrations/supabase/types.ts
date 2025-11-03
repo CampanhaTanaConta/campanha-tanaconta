@@ -231,6 +231,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_admin_dashboard_data: { Args: never; Returns: Json }
       get_dashboard_slices: {
         Args: { p_email: string; p_participante: string }
         Returns: Json

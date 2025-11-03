@@ -10,6 +10,8 @@ import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
 import { MultiPurposeChart } from '@/components/MultiPurposeChart';
 import { ActivatedClientsTable } from '@/components/ActivatedClientsTable';
+import { ParticipantsOverviewTable } from '@/components/ParticipantsOverviewTable';
+import { DistributorsTable } from '@/components/DistributorsTable';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import logo from '@/assets/logo.png';
 
@@ -68,6 +70,8 @@ const Dashboard = () => {
     partnersBelow30kCount: 0,
     notActivatedCount: 0,
   });
+  const [adminParticipantsData, setAdminParticipantsData] = useState<any[]>([]);
+  const [adminDistributorsData, setAdminDistributorsData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!participante) {
@@ -83,14 +87,28 @@ const Dashboard = () => {
       // Get user email from auth context - required for RLS
       const userEmail = localStorage.getItem('userEmail') || '';
       
-      // Call unified RPC that fetches all data with proper session context
-      const { data: dashboardSlices, error: rpcError } = await supabase
-        .rpc('get_dashboard_slices', { 
-          p_email: userEmail, 
-          p_participante: participante 
-        });
-
-      if (rpcError) throw rpcError;
+      let dashboardSlices;
+      
+      // If admin, fetch global data; otherwise fetch participant-specific data
+      if (isAdmin) {
+        const { data, error } = await supabase.rpc('get_admin_dashboard_data');
+        if (error) throw error;
+        dashboardSlices = data;
+        
+        // Set admin-specific data
+        const adminData = data as any;
+        setAdminParticipantsData(adminData?.participants || []);
+        setAdminDistributorsData(adminData?.distributors || []);
+      } else {
+        // Call unified RPC that fetches all data with proper session context
+        const { data, error } = await supabase
+          .rpc('get_dashboard_slices', { 
+            p_email: userEmail, 
+            p_participante: participante 
+          });
+        if (error) throw error;
+        dashboardSlices = data;
+      }
 
       // Extract data from RPC response with proper typing
       const responseData = dashboardSlices as any;
@@ -416,6 +434,24 @@ const Dashboard = () => {
             </Card>
           )}
         </div>
+
+        {/* Admin-only sections */}
+        {isAdmin && (
+          <div className="space-y-6">
+            <div className="border-l-4 border-primary pl-4">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                🔒 Visão Global do Administrador
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Dados consolidados de todos os participantes e distribuidores
+              </p>
+            </div>
+
+            <ParticipantsOverviewTable data={adminParticipantsData} />
+            
+            <DistributorsTable data={adminDistributorsData} />
+          </div>
+        )}
 
         {activationData.totalClients > 0 && (
           <>
