@@ -194,16 +194,21 @@ Deno.serve(async (req) => {
       try {
         let csvText: string;
         if (departmentStoreContent) {
+          console.log('[Department Store] Using content, length:', departmentStoreContent.length);
           csvText = departmentStoreContent;
         } else {
+          console.log('[Department Store] Fetching from URL:', departmentStoreUrl);
           const response = await fetch(departmentStoreUrl!);
           csvText = await response.text();
         }
         const records = parse(csvText, { skipFirstRow: true });
+        console.log('[Department Store] Parsed records:', records.length);
 
         // Clear existing department store data
         await supabaseClient.from('department_store').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
+        let processedCount = 0;
+        let skippedCount = 0;
         for (const record of records) {
           const clienteId = String(record[0] || '').trim(); // ID
           const idExterno = String(record[1] || '').trim();
@@ -224,7 +229,11 @@ Deno.serve(async (req) => {
           const dataCadastroStr = String(record[21] || '').trim();
           const status = String(record[22] || '').trim();
 
-          if (!clienteId || !nome) continue;
+          if (!clienteId || !nome) {
+            skippedCount++;
+            console.log('[Department Store] Skipping record - missing clienteId or nome:', { clienteId, nome });
+            continue;
+          }
 
           // Parse date if available (yyyy-mm-dd hh:mm:ss format)
           let dataCadastro = null;
@@ -256,10 +265,18 @@ Deno.serve(async (req) => {
             status: status || null,
           });
 
-          if (!error) results.departmentStore++;
+          if (!error) {
+            results.departmentStore++;
+            processedCount++;
+          } else {
+            console.error('[Department Store] Insert error:', error);
+            results.errors.push(`Department Store linha ${processedCount + skippedCount + 1}: ${error.message}`);
+          }
         }
+        console.log('[Department Store] Processed:', processedCount, 'Skipped:', skippedCount);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('[Department Store] Error:', errorMessage);
         results.errors.push(`Department Store: ${errorMessage}`);
       }
     }
