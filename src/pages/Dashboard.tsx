@@ -558,6 +558,17 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          <Card className="border-accent/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Projeção de vendas</CardTitle>
+              <TrendingUp className="h-5 w-5 text-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-accent">{formatCurrency(kpis.vendasEstimadas)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
+            </CardContent>
+          </Card>
+
           <Card className="border-success/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Premiação Atual</CardTitle>
@@ -576,17 +587,6 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-warning">{formatCurrency(kpis.premiacaoEstimada)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-accent/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projeção de vendas</CardTitle>
-              <TrendingUp className="h-5 w-5 text-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent">{formatCurrency(kpis.vendasEstimadas)}</div>
               <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
             </CardContent>
           </Card>
