@@ -45,7 +45,7 @@ export const ActivationChart = ({
       color: 'hsl(var(--muted))',
       total: noSalesValue
     },
-  ];
+  ].filter(item => item.value > 0);
 
   const barData = [
     { 
@@ -66,7 +66,7 @@ export const ActivationChart = ({
       fill: 'hsl(var(--muted))',
       valor: noSalesValue
     },
-  ];
+  ].filter(item => item.quantidade > 0);
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
