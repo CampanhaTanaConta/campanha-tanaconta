@@ -231,6 +231,10 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_dashboard_slices: {
+        Args: { p_email: string; p_participante: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

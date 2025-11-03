@@ -80,28 +80,38 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Get participant's wallet (clients)
-      const { data: wallet, error: walletError } = await supabase
-        .from('wallet')
-        .select('cliente_id')
-        .eq('participante', participante);
+      // Get user email from auth context - required for RLS
+      const userEmail = localStorage.getItem('userEmail') || '';
+      
+      // Call unified RPC that fetches all data with proper session context
+      const { data: dashboardSlices, error: rpcError } = await supabase
+        .rpc('get_dashboard_slices', { 
+          p_email: userEmail, 
+          p_participante: participante 
+        });
 
-      if (walletError) throw walletError;
+      if (rpcError) throw rpcError;
 
-      const clienteIds = wallet?.map((w) => w.cliente_id) || [];
+      // Extract data from RPC response
+      const wallet = dashboardSlices?.wallet || [];
+      const transactions = dashboardSlices?.transactions || [];
+      const departmentStore = dashboardSlices?.department_store || [];
+
+      // Optional debug logging (only when ?debug=1 in URL)
+      if (window.location.search.includes('debug=1')) {
+        console.log('[Dashboard Debug]', {
+          walletCount: wallet.length,
+          transactionsCount: transactions.length,
+          departmentStoreCount: departmentStore.length,
+        });
+      }
+
+      const clienteIds = wallet?.map((w: any) => w.cliente_id) || [];
 
       if (clienteIds.length === 0) {
         setIsLoading(false);
         return;
       }
-
-      // Get transactions for those clients
-      const { data: transactions, error: transError } = await supabase
-        .from('transactions')
-        .select('*')
-        .in('cliente_id', clienteIds);
-
-      if (transError) throw transError;
 
       // Calculate KPIs
       if (transactions && transactions.length > 0) {
@@ -137,14 +147,7 @@ const Dashboard = () => {
         });
       }
 
-      // Get department store data for activation tracking
-      const { data: departmentStore, error: deptError } = await supabase
-        .from('department_store')
-        .select('*')
-        .in('cliente_id', clienteIds);
-
-      if (deptError) throw deptError;
-
+      // Process department store data for activation tracking
       if (departmentStore && departmentStore.length > 0) {
         // Calculate total sales per client
         const salesByClient = transactions?.reduce((acc, t) => {
