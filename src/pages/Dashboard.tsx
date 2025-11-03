@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart } from 'lucide-react';
 import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
 import { MultiPurposeChart } from '@/components/MultiPurposeChart';
@@ -19,6 +19,7 @@ interface KPIData {
   vendas: number;
   premiacaoAtual: number;
   premiacaoEstimada: number;
+  vendasEstimadas: number;
   clientesAtivos: number;
 }
 
@@ -50,6 +51,7 @@ const Dashboard = () => {
     vendas: 0,
     premiacaoAtual: 0,
     premiacaoEstimada: 0,
+    vendasEstimadas: 0,
     clientesAtivos: 0,
   });
   const [activationData, setActivationData] = useState<ActivationData>({
@@ -157,18 +159,22 @@ const Dashboard = () => {
           const endDate = new Date('2025-12-31');
           
           let premiacaoEstimada = premiacaoAtual;
+          let vendasEstimadas = vendas;
           
           if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
+            const taxaDiariaVendas = vendas / diasDecorridos;
+            vendasEstimadas = taxaDiariaVendas * diasTotais;
           }
 
           setKpis({
             vendas,
             premiacaoAtual,
             premiacaoEstimada,
+            vendasEstimadas,
             clientesAtivos,
           });
         }
@@ -323,18 +329,22 @@ const Dashboard = () => {
           const endDate = new Date('2025-12-31');
           
           let premiacaoEstimada = premiacaoAtual;
+          let vendasEstimadas = vendas;
 
           if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
+            const taxaDiariaVendas = vendas / diasDecorridos;
+            vendasEstimadas = taxaDiariaVendas * diasTotais;
           }
 
           setKpis({
             vendas,
             premiacaoAtual,
             premiacaoEstimada,
+            vendasEstimadas,
             clientesAtivos,
           });
         }
@@ -570,43 +580,16 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {kpis.vendas < 50000 ? (
-            <Card className="border-destructive/50 shadow-lg hover:shadow-xl transition-shadow bg-destructive/5">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-destructive">Status da Premiação</CardTitle>
-                <AlertTriangle className="h-5 w-5 text-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive mb-2">
-                  Mínimo não atingido
-                </div>
-                <p className="text-xs font-medium text-destructive/90 mb-1">
-                  Faltam {formatCurrency(50000 - kpis.vendas)} para ativar seu cartão
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Mínimo: R$ 50.000,00 em vendas
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-success/50 shadow-lg hover:shadow-xl transition-shadow bg-success/5">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-success">Status da Premiação</CardTitle>
-                <CheckCircle2 className="h-5 w-5 text-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-success mb-2">
-                  🎉 Parabéns!
-                </div>
-                <p className="text-sm font-medium text-success">
-                  Você ativou o seu cartão!
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Mínimo de R$ 50.000,00 alcançado
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <Card className="border-accent/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Projeção de vendas</CardTitle>
+              <TrendingUp className="h-5 w-5 text-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-accent">{formatCurrency(kpis.vendasEstimadas)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Admin-only sections */}
