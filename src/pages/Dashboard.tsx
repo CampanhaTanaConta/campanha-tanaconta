@@ -110,6 +110,25 @@ const Dashboard = () => {
         dashboardSlices = data;
       }
 
+      // ========== Buscar data de última atualização (universal para todos) ==========
+      try {
+        const { data: lastUpdate } = await supabase
+          .from('transactions')
+          .select('created_at')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (lastUpdate?.created_at) {
+          setLastUpdateDate(new Date(lastUpdate.created_at));
+        } else {
+          setLastUpdateDate(new Date());
+        }
+      } catch (error) {
+        console.warn('Erro ao buscar data de atualização:', error);
+        setLastUpdateDate(new Date());
+      }
+
       // Extract data from RPC response with proper typing
       const responseData = dashboardSlices as any;
       
@@ -136,16 +155,9 @@ const Dashboard = () => {
           const startDate = new Date('2025-10-15');
           const endDate = new Date('2025-12-31');
           
-          // Use the date of the last transaction import (most recent created_at)
-          const lastUpdateDate = transactions.length > 0
-            ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
-            : new Date();
-
-          setLastUpdateDate(lastUpdateDate);
-
           let premiacaoEstimada = premiacaoAtual;
           
-          if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
+          if (lastUpdateDate && lastUpdateDate < endDate && lastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
@@ -309,16 +321,9 @@ const Dashboard = () => {
           const startDate = new Date('2025-10-15');
           const endDate = new Date('2025-12-31');
           
-          // Use the date of the last transaction import (most recent created_at)
-          const lastUpdateDate = transactions.length > 0
-            ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
-            : new Date();
-
-          setLastUpdateDate(lastUpdateDate);
-
           let premiacaoEstimada = premiacaoAtual;
-          
-          if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
+
+          if (lastUpdateDate && lastUpdateDate < endDate && lastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
