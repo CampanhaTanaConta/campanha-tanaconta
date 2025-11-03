@@ -119,6 +119,7 @@ Deno.serve(async (req) => {
           const record = records[i];
           const clienteNome = String(record[0] || '').trim();
           const clienteId = String(record[1] || '').trim();
+          const distribuidor = String(record[2] || '').trim(); // Column C: Distribuidor
           const participante = String(record[3] || '').trim();
 
           if (!clienteNome || !clienteId || !participante) continue;
@@ -127,6 +128,7 @@ Deno.serve(async (req) => {
             participante,
             cliente_id: clienteId,
             cliente_nome: clienteNome,
+            distribuidor,
           });
 
           if (!error) results.wallet++;
