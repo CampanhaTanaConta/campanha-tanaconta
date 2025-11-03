@@ -111,6 +111,7 @@ const Dashboard = () => {
       }
 
       // ========== Buscar data de última atualização (universal para todos) ==========
+      let currentLastUpdateDate: Date = new Date();
       try {
         const { data: lastUpdate } = await supabase
           .from('transactions')
@@ -119,15 +120,15 @@ const Dashboard = () => {
           .limit(1)
           .maybeSingle();
         
-        if (lastUpdate?.created_at) {
-          setLastUpdateDate(new Date(lastUpdate.created_at));
-        } else {
-          setLastUpdateDate(new Date());
-        }
+        currentLastUpdateDate = lastUpdate?.created_at
+          ? new Date(lastUpdate.created_at)
+          : new Date();
       } catch (error) {
         console.warn('Erro ao buscar data de atualização:', error);
-        setLastUpdateDate(new Date());
+        currentLastUpdateDate = new Date();
       }
+      // Atualiza o estado para exibição; cálculos usam a variável local
+      setLastUpdateDate(currentLastUpdateDate);
 
       // Extract data from RPC response with proper typing
       const responseData = dashboardSlices as any;
@@ -157,8 +158,8 @@ const Dashboard = () => {
           
           let premiacaoEstimada = premiacaoAtual;
           
-          if (lastUpdateDate && lastUpdateDate < endDate && lastUpdateDate >= startDate) {
-            const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+          if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
+            const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
@@ -323,8 +324,8 @@ const Dashboard = () => {
           
           let premiacaoEstimada = premiacaoAtual;
 
-          if (lastUpdateDate && lastUpdateDate < endDate && lastUpdateDate >= startDate) {
-            const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+          if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
+            const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
