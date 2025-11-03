@@ -112,175 +112,343 @@ const Dashboard = () => {
 
       // Extract data from RPC response with proper typing
       const responseData = dashboardSlices as any;
-      const wallet: Array<{ cliente_id: string }> = responseData?.wallet || [];
-      const transactions: Array<any> = responseData?.transactions || [];
-      const departmentStore: Array<any> = responseData?.department_store || [];
+      
+      if (isAdmin) {
+        // ========== ADMIN: Process ALL data without wallet filter ==========
+        const transactions: Array<any> = responseData?.transactions || [];
+        const departmentStore: Array<any> = responseData?.department_store || [];
 
-      // Optional debug logging (only when ?debug=1 in URL)
-      if (window.location.search.includes('debug=1')) {
-        console.log('[Dashboard Debug]', {
-          walletCount: wallet.length,
-          transactionsCount: transactions.length,
-          departmentStoreCount: departmentStore.length,
-        });
-      }
-
-      const clienteIds = wallet?.map((w) => w.cliente_id) || [];
-
-      if (clienteIds.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Calculate KPIs
-      if (transactions && transactions.length > 0) {
-        const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
-        const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
-        const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
-
-        // Calculate estimated award projection until 31/12/2025
-        const startDate = new Date('2025-10-15');
-        const endDate = new Date('2025-12-31');
-        
-        // Use the date of the last transaction import (most recent created_at)
-        const lastUpdateDate = transactions.length > 0
-          ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
-          : new Date();
-
-        setLastUpdateDate(lastUpdateDate);
-
-        let premiacaoEstimada = premiacaoAtual;
-        
-        if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
-          const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-          const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-          const taxaDiaria = premiacaoAtual / diasDecorridos;
-          premiacaoEstimada = taxaDiaria * diasTotais;
+        // Optional debug logging (only when ?debug=1 in URL)
+        if (window.location.search.includes('debug=1')) {
+          console.log('[Dashboard Debug - Admin]', {
+            transactionsCount: transactions.length,
+            departmentStoreCount: departmentStore.length,
+          });
         }
 
-        setKpis({
-          vendas,
-          premiacaoAtual,
-          premiacaoEstimada,
-          clientesAtivos,
-        });
-      }
+        // Calculate KPIs from ALL transactions
+        if (transactions && transactions.length > 0) {
+          const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
+          const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
+          const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
-      // Process department store data for activation tracking
-      if (departmentStore && departmentStore.length > 0) {
-        // Calculate total sales per client
-        const salesByClient = transactions?.reduce((acc, t) => {
-          const clientId = t.cliente_id;
-          acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
-          return acc;
-        }, {} as Record<string, number>) || {};
-
-        const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
-        const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
-        const totalClients = departmentStore.length;
-        const noSalesClients = totalClients - Object.keys(salesByClient).length;
-
-        // Calculate total sales values by status
-        const activatedValue = (Object.values(salesByClient)
-          .filter((total: number) => total > 500)
-          .reduce((sum: number, val) => sum + (val as number), 0)) as number;
-        
-        const inProgressValue = (Object.entries(salesByClient)
-          .filter(([_, total]) => (total as number) > 0 && (total as number) <= 500)
-          .reduce((sum: number, [_, val]) => sum + (val as number), 0)) as number;
-        
-        const noSalesValue = 0; // Revendas sem vendas têm valor 0
-
-        // Calculate partners with R$30k+ in sales
-        const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
-        const partnersBelow30kCount = totalClients - partners30kPlusCount;
-
-        // Calculate not activated clients (including in progress and no sales)
-        const notActivatedCount = inProgressClients + noSalesClients;
-
-        // Calculate monthly sales for each client
-        const salesByClientAndMonth = transactions?.reduce((acc, t) => {
-          const clientId = t.cliente_id;
-          const date = new Date(t.data_transacao);
-          const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          // Calculate estimated award projection until 31/12/2025
+          const startDate = new Date('2025-10-15');
+          const endDate = new Date('2025-12-31');
           
-          if (!acc[clientId]) {
-            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+          // Use the date of the last transaction import (most recent created_at)
+          const lastUpdateDate = transactions.length > 0
+            ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
+            : new Date();
+
+          setLastUpdateDate(lastUpdateDate);
+
+          let premiacaoEstimada = premiacaoAtual;
+          
+          if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
+            const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+            const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            const taxaDiaria = premiacaoAtual / diasDecorridos;
+            premiacaoEstimada = taxaDiaria * diasTotais;
           }
-          
-          const value = Number(t.total_parcela);
-          if (month === 9) acc[clientId].outubro += value; // October
-          if (month === 10) acc[clientId].novembro += value; // November
-          if (month === 11) acc[clientId].dezembro += value; // December
-          
-          return acc;
-        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
 
-        // Calcular quais revendas venderam Energia Solar
-        const clientsWithSolarSales = new Set(
-          transactions
-            ?.filter(t => t.tipo_venda === 'Energia Solar')
-            .map(t => t.cliente_id) || []
-        );
+          setKpis({
+            vendas,
+            premiacaoAtual,
+            premiacaoEstimada,
+            clientesAtivos,
+          });
+        }
 
-        const solarSalesClients = clientsWithSolarSales.size;
-        const nonSolarSalesClients = totalClients - solarSalesClients;
-
-        // Calcular vendas de Energia Solar por revenda
-        const solarSalesByClient = transactions?.reduce((acc, t) => {
-          if (t.tipo_venda === 'Energia Solar') {
+        // Process department store data for activation tracking
+        if (departmentStore && departmentStore.length > 0) {
+          // Calculate total sales per client
+          const salesByClient = transactions?.reduce((acc, t) => {
             const clientId = t.cliente_id;
             acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            return acc;
+          }, {} as Record<string, number>) || {};
+
+          const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
+          const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
+          const totalClients = departmentStore.length;
+          const noSalesClients = totalClients - Object.keys(salesByClient).length;
+
+          // Calculate total sales values by status
+          const activatedValue = (Object.values(salesByClient)
+            .filter((total: number) => total > 500)
+            .reduce((sum: number, val) => sum + (val as number), 0)) as number;
+          
+          const inProgressValue = (Object.entries(salesByClient)
+            .filter(([_, total]) => (total as number) > 0 && (total as number) <= 500)
+            .reduce((sum: number, [_, val]) => sum + (val as number), 0)) as number;
+          
+          const noSalesValue = 0; // Revendas sem vendas têm valor 0
+
+          // Calculate partners with R$30k+ in sales
+          const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
+          const partnersBelow30kCount = totalClients - partners30kPlusCount;
+
+          // Calculate not activated clients (including in progress and no sales)
+          const notActivatedCount = inProgressClients + noSalesClients;
+
+          // Calculate monthly sales for each client
+          const salesByClientAndMonth = transactions?.reduce((acc, t) => {
+            const clientId = t.cliente_id;
+            const date = new Date(t.data_transacao);
+            const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+            
+            if (!acc[clientId]) {
+              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+            }
+            
+            const value = Number(t.total_parcela);
+            if (month === 9) acc[clientId].outubro += value; // October
+            if (month === 10) acc[clientId].novembro += value; // November
+            if (month === 11) acc[clientId].dezembro += value; // December
+            
+            return acc;
+          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+
+          // Calcular quais revendas venderam Energia Solar
+          const clientsWithSolarSales = new Set(
+            transactions
+              ?.filter(t => t.tipo_venda === 'Energia Solar')
+              .map(t => t.cliente_id) || []
+          );
+
+          const solarSalesClients = clientsWithSolarSales.size;
+          const nonSolarSalesClients = totalClients - solarSalesClients;
+
+          // Calcular vendas de Energia Solar por revenda
+          const solarSalesByClient = transactions?.reduce((acc, t) => {
+            if (t.tipo_venda === 'Energia Solar') {
+              const clientId = t.cliente_id;
+              acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            }
+            return acc;
+          }, {} as Record<string, number>) || {};
+
+          // Get pending clients details
+          const pendingClientsList = departmentStore
+            .filter(client => {
+              const totalVendas = salesByClient[client.cliente_id] || 0;
+              return totalVendas <= 500;
+            })
+            .map(client => ({
+              ...client,
+              totalVendas: salesByClient[client.cliente_id] || 0,
+            }))
+            .sort((a, b) => b.totalVendas - a.totalVendas)
+            .slice(0, 10); // Top 10 pending clients
+
+          // Get activated clients details with monthly breakdown
+          const activatedClientsList = departmentStore
+            .filter(client => {
+              const totalVendas = salesByClient[client.cliente_id] || 0;
+              return totalVendas > 500;
+            })
+            .map(client => ({
+              ...client,
+              totalVendas: salesByClient[client.cliente_id] || 0,
+              salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+              hasSolarSales: !!solarSalesByClient[client.cliente_id],
+              totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
+            }))
+            .sort((a, b) => b.totalVendas - a.totalVendas);
+
+          setActivationData({
+            totalClients,
+            activatedClients,
+            pendingClients: totalClients - activatedClients,
+            activationRate: totalClients > 0 ? (activatedClients / totalClients) * 100 : 0,
+            pendingClientsList,
+            activatedClientsList,
+            inProgressCount: inProgressClients,
+            noSalesCount: noSalesClients,
+            activatedValue,
+            inProgressValue,
+            noSalesValue,
+            solarSalesClients,
+            nonSolarSalesClients,
+            partners30kPlusCount,
+            partnersBelow30kCount,
+            notActivatedCount,
+          });
+        }
+
+      } else {
+        // ========== PARTICIPANT: Filter data by wallet ==========
+        const wallet: Array<{ cliente_id: string }> = responseData?.wallet || [];
+        const transactions: Array<any> = responseData?.transactions || [];
+        const departmentStore: Array<any> = responseData?.department_store || [];
+
+        // Optional debug logging (only when ?debug=1 in URL)
+        if (window.location.search.includes('debug=1')) {
+          console.log('[Dashboard Debug - Participant]', {
+            walletCount: wallet.length,
+            transactionsCount: transactions.length,
+            departmentStoreCount: departmentStore.length,
+          });
+        }
+
+        const clienteIds = wallet?.map((w) => w.cliente_id) || [];
+
+        if (clienteIds.length === 0) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Calculate KPIs
+        if (transactions && transactions.length > 0) {
+          const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
+          const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
+          const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
+
+          // Calculate estimated award projection until 31/12/2025
+          const startDate = new Date('2025-10-15');
+          const endDate = new Date('2025-12-31');
+          
+          // Use the date of the last transaction import (most recent created_at)
+          const lastUpdateDate = transactions.length > 0
+            ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
+            : new Date();
+
+          setLastUpdateDate(lastUpdateDate);
+
+          let premiacaoEstimada = premiacaoAtual;
+          
+          if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
+            const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+            const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            const taxaDiaria = premiacaoAtual / diasDecorridos;
+            premiacaoEstimada = taxaDiaria * diasTotais;
           }
-          return acc;
-        }, {} as Record<string, number>) || {};
 
-        // Get pending clients details
-        const pendingClientsList = departmentStore
-          .filter(client => {
-            const totalVendas = salesByClient[client.cliente_id] || 0;
-            return totalVendas <= 500;
-          })
-          .map(client => ({
-            ...client,
-            totalVendas: salesByClient[client.cliente_id] || 0,
-          }))
-          .sort((a, b) => b.totalVendas - a.totalVendas)
-          .slice(0, 10); // Top 10 pending clients
+          setKpis({
+            vendas,
+            premiacaoAtual,
+            premiacaoEstimada,
+            clientesAtivos,
+          });
+        }
 
-        // Get activated clients details with monthly breakdown
-        const activatedClientsList = departmentStore
-          .filter(client => {
-            const totalVendas = salesByClient[client.cliente_id] || 0;
-            return totalVendas > 500;
-          })
-          .map(client => ({
-            ...client,
-            totalVendas: salesByClient[client.cliente_id] || 0,
-            salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
-            hasSolarSales: !!solarSalesByClient[client.cliente_id],
-            totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
-          }))
-          .sort((a, b) => b.totalVendas - a.totalVendas);
+        // Process department store data for activation tracking
+        if (departmentStore && departmentStore.length > 0) {
+          // Calculate total sales per client
+          const salesByClient = transactions?.reduce((acc, t) => {
+            const clientId = t.cliente_id;
+            acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            return acc;
+          }, {} as Record<string, number>) || {};
 
-        setActivationData({
-          totalClients,
-          activatedClients,
-          pendingClients: totalClients - activatedClients,
-          activationRate: totalClients > 0 ? (activatedClients / totalClients) * 100 : 0,
-          pendingClientsList,
-          activatedClientsList,
-          inProgressCount: inProgressClients,
-          noSalesCount: noSalesClients,
-          activatedValue,
-          inProgressValue,
-          noSalesValue,
-          solarSalesClients,
-          nonSolarSalesClients,
-          partners30kPlusCount,
-          partnersBelow30kCount,
-          notActivatedCount,
-        });
+          const activatedClients = Object.values(salesByClient).filter((total: number) => total > 500).length;
+          const inProgressClients = Object.entries(salesByClient).filter(([_, total]) => (total as number) > 0 && (total as number) <= 500).length;
+          const totalClients = departmentStore.length;
+          const noSalesClients = totalClients - Object.keys(salesByClient).length;
+
+          // Calculate total sales values by status
+          const activatedValue = (Object.values(salesByClient)
+            .filter((total: number) => total > 500)
+            .reduce((sum: number, val) => sum + (val as number), 0)) as number;
+          
+          const inProgressValue = (Object.entries(salesByClient)
+            .filter(([_, total]) => (total as number) > 0 && (total as number) <= 500)
+            .reduce((sum: number, [_, val]) => sum + (val as number), 0)) as number;
+          
+          const noSalesValue = 0; // Revendas sem vendas têm valor 0
+
+          // Calculate partners with R$30k+ in sales
+          const partners30kPlusCount = Object.values(salesByClient).filter((total: number) => total >= 30000).length;
+          const partnersBelow30kCount = totalClients - partners30kPlusCount;
+
+          // Calculate not activated clients (including in progress and no sales)
+          const notActivatedCount = inProgressClients + noSalesClients;
+
+          // Calculate monthly sales for each client
+          const salesByClientAndMonth = transactions?.reduce((acc, t) => {
+            const clientId = t.cliente_id;
+            const date = new Date(t.data_transacao);
+            const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+            
+            if (!acc[clientId]) {
+              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+            }
+            
+            const value = Number(t.total_parcela);
+            if (month === 9) acc[clientId].outubro += value; // October
+            if (month === 10) acc[clientId].novembro += value; // November
+            if (month === 11) acc[clientId].dezembro += value; // December
+            
+            return acc;
+          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+
+          // Calcular quais revendas venderam Energia Solar
+          const clientsWithSolarSales = new Set(
+            transactions
+              ?.filter(t => t.tipo_venda === 'Energia Solar')
+              .map(t => t.cliente_id) || []
+          );
+
+          const solarSalesClients = clientsWithSolarSales.size;
+          const nonSolarSalesClients = totalClients - solarSalesClients;
+
+          // Calcular vendas de Energia Solar por revenda
+          const solarSalesByClient = transactions?.reduce((acc, t) => {
+            if (t.tipo_venda === 'Energia Solar') {
+              const clientId = t.cliente_id;
+              acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            }
+            return acc;
+          }, {} as Record<string, number>) || {};
+
+          // Get pending clients details
+          const pendingClientsList = departmentStore
+            .filter(client => {
+              const totalVendas = salesByClient[client.cliente_id] || 0;
+              return totalVendas <= 500;
+            })
+            .map(client => ({
+              ...client,
+              totalVendas: salesByClient[client.cliente_id] || 0,
+            }))
+            .sort((a, b) => b.totalVendas - a.totalVendas)
+            .slice(0, 10); // Top 10 pending clients
+
+          // Get activated clients details with monthly breakdown
+          const activatedClientsList = departmentStore
+            .filter(client => {
+              const totalVendas = salesByClient[client.cliente_id] || 0;
+              return totalVendas > 500;
+            })
+            .map(client => ({
+              ...client,
+              totalVendas: salesByClient[client.cliente_id] || 0,
+              salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+              hasSolarSales: !!solarSalesByClient[client.cliente_id],
+              totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
+            }))
+            .sort((a, b) => b.totalVendas - a.totalVendas);
+
+          setActivationData({
+            totalClients,
+            activatedClients,
+            pendingClients: totalClients - activatedClients,
+            activationRate: totalClients > 0 ? (activatedClients / totalClients) * 100 : 0,
+            pendingClientsList,
+            activatedClientsList,
+            inProgressCount: inProgressClients,
+            noSalesCount: noSalesClients,
+            activatedValue,
+            inProgressValue,
+            noSalesValue,
+            solarSalesClients,
+            nonSolarSalesClients,
+            partners30kPlusCount,
+            partnersBelow30kCount,
+            notActivatedCount,
+          });
+        }
       }
 
       setIsLoading(false);
