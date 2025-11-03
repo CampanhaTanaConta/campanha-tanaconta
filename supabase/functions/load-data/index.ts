@@ -240,6 +240,7 @@ Deno.serve(async (req) => {
           const idxTipoVenda = getIndex(headers, ['Tipo Venda', 'Tipo da Venda', 'Categoria', 'Produto', 'Tipo']);
           const idxTotalParcela = getIndex(headers, ['Total Parcela', 'Total Parcela(R$)', 'Valor Líquido', 'Valor Liquido', 'Valor', 'Total']);
           const idxPremiacaoPct = getIndex(headers, ['Premiação %', 'Premiacao %', 'Premiação', 'Premiacao', 'Comissão %', 'Comissao %']);
+          const idxEstabComercial = getIndex(headers, ['Estab. Comercial', 'Estab Comercial', 'Estabelecimento Comercial', 'Nome Fantasia', 'Fantasia']);
 
           console.log('[Transactions] Column indices:', { idxClienteId, idxDataTransacao, idxTipoVenda, idxTotalParcela, idxPremiacaoPct });
 
@@ -259,6 +260,7 @@ Deno.serve(async (req) => {
             const tipoVenda = idxTipoVenda >= 0 ? String(record[idxTipoVenda] || '').trim() : '';
             const totalParcelaStr = idxTotalParcela >= 0 ? String(record[idxTotalParcela] || '0').trim() : '0';
             const premiacaoPctStr = idxPremiacaoPct >= 0 ? String(record[idxPremiacaoPct] || '0').trim() : '0';
+            const estabComercial = idxEstabComercial >= 0 ? String(record[idxEstabComercial] || '').trim() : '';
 
             const clienteId = normalizeCnpj(clienteIdRaw);
 
@@ -295,6 +297,7 @@ Deno.serve(async (req) => {
               total_parcela: totalParcelaNum,
               premiacao_pct_norm: premiacaoPctNorm,
               premiacao_valor: premiacaoValor,
+              estab_comercial: estabComercial || null,
             });
 
             if (!error) results.transactions++;

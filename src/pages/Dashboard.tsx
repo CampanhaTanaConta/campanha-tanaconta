@@ -282,6 +282,16 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, number>) || {};
 
+          // Criar mapa de cliente_id para estab_comercial
+          const estabComercialByClient = transactions?.reduce((acc, t) => {
+            const clientId = t.cliente_id;
+            // Pega o primeiro estab_comercial não vazio encontrado para cada cliente
+            if (!acc[clientId] && t.estab_comercial) {
+              acc[clientId] = t.estab_comercial;
+            }
+            return acc;
+          }, {} as Record<string, string>) || {};
+
           // Get pending clients details (Admin view - no wallet info available)
           const pendingClientsList = departmentStore
             .filter(client => {
@@ -290,6 +300,7 @@ const Dashboard = () => {
             })
             .map(client => ({
               ...client,
+              estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
               totalVendas: salesByClient[client.cliente_id] || 0,
             }))
             .sort((a, b) => b.totalVendas - a.totalVendas)
@@ -303,6 +314,7 @@ const Dashboard = () => {
             })
             .map(client => ({
               ...client,
+              estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
               totalVendas: salesByClient[client.cliente_id] || 0,
               salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
               hasSolarSales: !!solarSalesByClient[client.cliente_id],
@@ -452,6 +464,16 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, number>) || {};
 
+          // Criar mapa de cliente_id para estab_comercial
+          const estabComercialByClient = transactions?.reduce((acc, t) => {
+            const clientId = t.cliente_id;
+            // Pega o primeiro estab_comercial não vazio encontrado para cada cliente
+            if (!acc[clientId] && t.estab_comercial) {
+              acc[clientId] = t.estab_comercial;
+            }
+            return acc;
+          }, {} as Record<string, string>) || {};
+
           // Create wallet map for shared client info
           const walletMap = new Map<string, { 
             compartilhado: boolean; 
@@ -477,6 +499,7 @@ const Dashboard = () => {
               const walletInfo = walletMap.get(client.cliente_id);
               return {
                 ...client,
+                estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
                 totalVendas: salesByClient[client.cliente_id] || 0,
                 compartilhado: walletInfo?.compartilhado,
                 num_participantes: walletInfo?.num_participantes,
@@ -496,6 +519,7 @@ const Dashboard = () => {
               const walletInfo = walletMap.get(client.cliente_id);
               return {
                 ...client,
+                estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
                 totalVendas: salesByClient[client.cliente_id] || 0,
                 salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
                 hasSolarSales: !!solarSalesByClient[client.cliente_id],

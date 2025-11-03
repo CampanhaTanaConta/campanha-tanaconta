@@ -145,6 +145,7 @@ export type Database = {
           cliente_id: string
           created_at: string | null
           data_transacao: string
+          estab_comercial: string | null
           id: string
           premiacao_pct_norm: number
           premiacao_valor: number
@@ -155,6 +156,7 @@ export type Database = {
           cliente_id: string
           created_at?: string | null
           data_transacao: string
+          estab_comercial?: string | null
           id?: string
           premiacao_pct_norm: number
           premiacao_valor: number
@@ -165,6 +167,7 @@ export type Database = {
           cliente_id?: string
           created_at?: string | null
           data_transacao?: string
+          estab_comercial?: string | null
           id?: string
           premiacao_pct_norm?: number
           premiacao_valor?: number

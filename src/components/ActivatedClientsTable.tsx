@@ -13,6 +13,7 @@ interface MonthlySales {
 interface ActivatedClient {
   cliente_id: string;
   nome: string;
+  estab_comercial?: string;
   cidade: string;
   uf: string;
   email: string;
@@ -83,7 +84,7 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                   <TableRow key={client.cliente_id}>
                     <TableCell className="font-medium">
                       <div>
-                        <p className="font-semibold">{client.nome}</p>
+                        <p className="font-semibold">{client.estab_comercial || client.nome}</p>
                         <p className="text-xs text-muted-foreground">ID: {client.cliente_id}</p>
                       </div>
                     </TableCell>
