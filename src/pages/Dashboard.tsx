@@ -39,6 +39,16 @@ interface ActivationData {
   notActivatedCount: number;
 }
 
+// Utility to safely parse database dates
+const parseDbDate = (input: string | Date | null | undefined, fallback: Date): Date => {
+  if (!input) return fallback;
+  if (input instanceof Date) return isNaN(input.getTime()) ? fallback : input;
+  // Normalize "YYYY-MM-DD HH:MM:SS+00" to "YYYY-MM-DDTHH:MM:SS"
+  const normalized = typeof input === 'string' ? input.replace(' ', 'T') : String(input);
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? fallback : d;
+};
+
 const Dashboard = () => {
   const { participante, isAdmin, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -118,17 +128,19 @@ const Dashboard = () => {
         const startDate = new Date('2025-10-15');
         const endDate = new Date('2025-12-31');
         
-        // Use the date of the last transaction import (most recent created_at)
-        const lastUpdateDate = transactions.length > 0
-          ? new Date(Math.max(...transactions.map(t => new Date(t.created_at || startDate).getTime())))
-          : new Date();
+        // Use the date of the last transaction import (most recent created_at) - safely parsed
+        const times = transactions.map(t => parseDbDate(t.created_at as any, startDate).getTime());
+        const validTimes = times.filter((t) => Number.isFinite(t));
+        const maxTime = validTimes.length > 0 ? Math.max(...validTimes) : null;
+        const computedLastUpdate = maxTime !== null ? new Date(maxTime) : null;
 
-        setLastUpdateDate(lastUpdateDate);
+        setLastUpdateDate(computedLastUpdate);
 
         let premiacaoEstimada = premiacaoAtual;
         
-        if (lastUpdateDate < endDate && lastUpdateDate >= startDate) {
-          const diasDecorridos = Math.max(1, Math.floor((lastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        const referenceDate = computedLastUpdate ?? new Date();
+        if (referenceDate < endDate && referenceDate >= startDate) {
+          const diasDecorridos = Math.max(1, Math.floor((referenceDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
           const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
           const taxaDiaria = premiacaoAtual / diasDecorridos;
           premiacaoEstimada = taxaDiaria * diasTotais;
@@ -286,7 +298,7 @@ const Dashboard = () => {
   };
 
   const formatDate = (date: Date | null) => {
-    if (!date) return '--/--/----';
+    if (!date || isNaN(date.getTime())) return '--/--/----';
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -462,6 +474,9 @@ const Dashboard = () => {
                         cy="50%"
                         labelLine={false}
                         label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                          // Defensive check for invalid percent
+                          if (!Number.isFinite(percent)) return null;
+                          
                           const pieData = [
                             { total: activationData.activatedValue },
                             { total: activationData.inProgressValue },
