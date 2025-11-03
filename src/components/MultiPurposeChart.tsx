@@ -99,15 +99,15 @@ export const MultiPurposeChart = ({
         <ResponsiveContainer width="100%" height={350}>
           <BarChart 
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="categoria" />
             <YAxis />
             <Legend 
               content={renderLegend}
-              verticalAlign="top"
-              height={50}
+              verticalAlign="bottom"
+              height={80}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -135,42 +135,36 @@ export const MultiPurposeChart = ({
             />
             <Bar 
               dataKey="Ativados" 
-              stackId="a"
               fill={colorMap['Ativados']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Não Ativados" 
-              stackId="a"
               fill={colorMap['Não Ativados']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Com Solar" 
-              stackId="b"
               fill={colorMap['Com Solar']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Sem Solar" 
-              stackId="b"
               fill={colorMap['Sem Solar']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="≥ R$30k" 
-              stackId="c"
               fill={colorMap['≥ R$30k']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="< R$30k" 
-              stackId="c"
               fill={colorMap['< R$30k']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
