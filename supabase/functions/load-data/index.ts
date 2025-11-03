@@ -209,6 +209,17 @@ Deno.serve(async (req) => {
         }
         const records = parse(csvText, { skipFirstRow: false });
         console.log('[Department Store] Parsed records:', records.length);
+        
+        // Log header for debugging
+        if (records.length > 0) {
+          console.log('[Department Store] Header row:', records[0]);
+          console.log('[Department Store] Total columns:', records[0].length);
+        }
+        
+        // Log first data row for debugging
+        if (records.length > 1) {
+          console.log('[Department Store] First data row:', records[1]);
+        }
 
         // Clear existing department store data
         await supabaseClient.from('department_store').delete().neq('id', '00000000-0000-0000-0000-000000000000');
