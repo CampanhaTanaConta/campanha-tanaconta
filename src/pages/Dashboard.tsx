@@ -15,6 +15,30 @@ import { DistributorsTable } from '@/components/DistributorsTable';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import logo from '@/assets/logo.png';
 
+interface WalletItem {
+  id: string;
+  cliente_id: string;
+  cliente_nome: string;
+  participante: string;
+  created_at: string;
+  num_participantes?: number;
+  compartilhado?: boolean;
+  outros_participantes?: string[];
+}
+
+interface Transaction {
+  id: string;
+  cliente_id: string;
+  data_transacao: string;
+  tipo_venda: string;
+  total_parcela: number;
+  premiacao_pct_norm: number;
+  premiacao_valor: number;
+  created_at: string;
+  num_participantes?: number;
+  compartilhado?: boolean;
+}
+
 interface KPIData {
   vendas: number;
   premiacaoAtual: number;
@@ -256,7 +280,7 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, number>) || {};
 
-          // Get pending clients details
+          // Get pending clients details (Admin view - no wallet info available)
           const pendingClientsList = departmentStore
             .filter(client => {
               const totalVendas = salesByClient[client.cliente_id] || 0;
@@ -269,7 +293,7 @@ const Dashboard = () => {
             .sort((a, b) => b.totalVendas - a.totalVendas)
             .slice(0, 10); // Top 10 pending clients
 
-          // Get activated clients details with monthly breakdown
+          // Get activated clients details with monthly breakdown (Admin view - no wallet info available)
           const activatedClientsList = departmentStore
             .filter(client => {
               const totalVendas = salesByClient[client.cliente_id] || 0;
@@ -426,16 +450,37 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, number>) || {};
 
+          // Create wallet map for shared client info
+          const walletMap = new Map<string, { 
+            compartilhado: boolean; 
+            num_participantes: number;
+            outros_participantes: string[];
+          }>();
+          
+          (wallet as WalletItem[])?.forEach((w) => {
+            walletMap.set(w.cliente_id, {
+              compartilhado: w.compartilhado || false,
+              num_participantes: w.num_participantes || 1,
+              outros_participantes: w.outros_participantes || []
+            });
+          });
+
           // Get pending clients details
           const pendingClientsList = departmentStore
             .filter(client => {
               const totalVendas = salesByClient[client.cliente_id] || 0;
               return totalVendas <= 500;
             })
-            .map(client => ({
-              ...client,
-              totalVendas: salesByClient[client.cliente_id] || 0,
-            }))
+            .map(client => {
+              const walletInfo = walletMap.get(client.cliente_id);
+              return {
+                ...client,
+                totalVendas: salesByClient[client.cliente_id] || 0,
+                compartilhado: walletInfo?.compartilhado,
+                num_participantes: walletInfo?.num_participantes,
+                outros_participantes: walletInfo?.outros_participantes
+              };
+            })
             .sort((a, b) => b.totalVendas - a.totalVendas)
             .slice(0, 10); // Top 10 pending clients
 
@@ -445,13 +490,19 @@ const Dashboard = () => {
               const totalVendas = salesByClient[client.cliente_id] || 0;
               return totalVendas > 500;
             })
-            .map(client => ({
-              ...client,
-              totalVendas: salesByClient[client.cliente_id] || 0,
-              salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
-              hasSolarSales: !!solarSalesByClient[client.cliente_id],
-              totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
-            }))
+            .map(client => {
+              const walletInfo = walletMap.get(client.cliente_id);
+              return {
+                ...client,
+                totalVendas: salesByClient[client.cliente_id] || 0,
+                salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+                hasSolarSales: !!solarSalesByClient[client.cliente_id],
+                totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
+                compartilhado: walletInfo?.compartilhado,
+                num_participantes: walletInfo?.num_participantes,
+                outros_participantes: walletInfo?.outros_participantes
+              };
+            })
             .sort((a, b) => b.totalVendas - a.totalVendas);
 
           setActivationData({

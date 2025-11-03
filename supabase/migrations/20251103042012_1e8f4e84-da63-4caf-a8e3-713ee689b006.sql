@@ -1,0 +1,223 @@
+-- Modificar get_dashboard_slices para retornar vendas totais mas dividir prêmios
+CREATE OR REPLACE FUNCTION public.get_dashboard_slices(p_email text, p_participante text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  wallet_ids text[];
+  wallet_data jsonb;
+  transactions_data jsonb;
+  department_store_data jsonb;
+BEGIN
+  -- Set session variables for RLS
+  PERFORM set_config('app.current_user_email', p_email, true);
+  PERFORM set_config('app.current_user_participante', p_participante, true);
+  
+  -- Get wallet cliente_ids for filtering
+  SELECT array_agg(cliente_id) INTO wallet_ids
+  FROM wallet
+  WHERE participante = p_participante;
+  
+  IF wallet_ids IS NULL THEN
+    RETURN jsonb_build_object(
+      'wallet', '[]'::jsonb,
+      'transactions', '[]'::jsonb,
+      'department_store', '[]'::jsonb
+    );
+  END IF;
+  
+  -- Get wallet data with participant count
+  WITH participantes_por_cliente AS (
+    SELECT 
+      cliente_id,
+      COUNT(DISTINCT participante)::integer as num_participantes,
+      array_agg(DISTINCT participante) as lista_participantes
+    FROM wallet
+    GROUP BY cliente_id
+  )
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'id', w.id,
+      'cliente_id', w.cliente_id,
+      'cliente_nome', w.cliente_nome,
+      'participante', w.participante,
+      'created_at', w.created_at,
+      'num_participantes', ppc.num_participantes,
+      'compartilhado', (ppc.num_participantes > 1),
+      'outros_participantes', (
+        SELECT array_agg(p) 
+        FROM unnest(ppc.lista_participantes) p 
+        WHERE p != w.participante
+      )
+    )
+  ) INTO wallet_data
+  FROM wallet w
+  INNER JOIN participantes_por_cliente ppc ON ppc.cliente_id = w.cliente_id
+  WHERE w.participante = p_participante;
+  
+  -- Get transactions with FULL sales but DIVIDED premio
+  WITH participantes_por_cliente AS (
+    SELECT 
+      cliente_id,
+      COUNT(DISTINCT participante)::numeric as num_participantes
+    FROM wallet
+    GROUP BY cliente_id
+  )
+  SELECT jsonb_agg(
+    jsonb_build_object(
+      'id', t.id,
+      'cliente_id', t.cliente_id,
+      'data_transacao', t.data_transacao,
+      'tipo_venda', t.tipo_venda,
+      'total_parcela', t.total_parcela,
+      'premiacao_pct_norm', t.premiacao_pct_norm,
+      'premiacao_valor', (t.premiacao_valor / ppc.num_participantes),
+      'created_at', t.created_at,
+      'num_participantes', ppc.num_participantes::integer,
+      'compartilhado', (ppc.num_participantes > 1)
+    )
+  ) INTO transactions_data
+  FROM transactions t
+  INNER JOIN participantes_por_cliente ppc ON ppc.cliente_id = t.cliente_id
+  WHERE t.cliente_id = ANY(wallet_ids);
+  
+  -- Get department_store data
+  SELECT jsonb_agg(row_to_json(d)::jsonb) INTO department_store_data
+  FROM department_store d
+  WHERE d.cliente_id = ANY(wallet_ids);
+  
+  RETURN jsonb_build_object(
+    'wallet', COALESCE(wallet_data, '[]'::jsonb),
+    'transactions', COALESCE(transactions_data, '[]'::jsonb),
+    'department_store', COALESCE(department_store_data, '[]'::jsonb)
+  );
+END;
+$function$;
+
+-- Modificar get_admin_dashboard_data para evitar duplicação e dividir prêmios
+CREATE OR REPLACE FUNCTION public.get_admin_dashboard_data()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  participants_data jsonb;
+  distributors_data jsonb;
+  all_transactions jsonb;
+  all_department_store jsonb;
+  v_user_email text;
+BEGIN
+  v_user_email := current_setting('app.current_user_email', true);
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM user_roles ur
+    JOIN admin_users au ON au.id = ur.user_id
+    WHERE au.email = v_user_email
+    AND ur.role = 'admin'::app_role
+  ) THEN
+    RAISE EXCEPTION 'Acesso negado: usuário não é admin';
+  END IF;
+  
+  -- Participants: Full sales, divided premio
+  WITH participantes_por_cliente AS (
+    SELECT 
+      cliente_id,
+      COUNT(DISTINCT participante)::numeric as num_participantes
+    FROM wallet
+    GROUP BY cliente_id
+  ),
+  vendas_e_premios AS (
+    SELECT 
+      w.participante,
+      t.cliente_id,
+      SUM(t.total_parcela) as vendas_totais,
+      SUM(t.premiacao_valor / ppc.num_participantes) as premio_dividido
+    FROM wallet w
+    INNER JOIN transactions t ON t.cliente_id = w.cliente_id
+    INNER JOIN participantes_por_cliente ppc ON ppc.cliente_id = w.cliente_id
+    GROUP BY w.participante, t.cliente_id
+  )
+  SELECT jsonb_agg(row_to_json(p)::jsonb) INTO participants_data
+  FROM (
+    SELECT 
+      p.participante,
+      p.email,
+      COUNT(DISTINCT w.cliente_id) as total_revendas,
+      COUNT(DISTINCT CASE 
+        WHEN COALESCE(vep.vendas_totais, 0) > 500 THEN w.cliente_id 
+      END) as revendas_ativas,
+      COUNT(DISTINCT CASE 
+        WHEN COALESCE(vep.vendas_totais, 0) <= 500 THEN w.cliente_id 
+      END) as revendas_inativas,
+      COALESCE(SUM(vep.vendas_totais), 0) as vendas_totais
+    FROM participants p
+    LEFT JOIN wallet w ON w.participante = p.participante
+    LEFT JOIN vendas_e_premios vep ON vep.participante = p.participante AND vep.cliente_id = w.cliente_id
+    GROUP BY p.participante, p.email
+    ORDER BY vendas_totais DESC
+  ) p;
+  
+  -- Distributors: Avoid duplication
+  WITH cliente_vendas AS (
+    SELECT 
+      cliente_id, 
+      SUM(total_parcela) as vendas
+    FROM transactions
+    GROUP BY cliente_id
+  ),
+  distributor_summary AS (
+    SELECT DISTINCT ON (ds.cliente_id)
+      COALESCE(ds.representante, 'Sem Distribuidor') as representante,
+      ds.cliente_id,
+      cv.vendas
+    FROM department_store ds
+    LEFT JOIN cliente_vendas cv ON cv.cliente_id = ds.cliente_id
+    ORDER BY ds.cliente_id, ds.representante
+  ),
+  participantes_por_cliente_dist AS (
+    SELECT 
+      ds.cliente_id,
+      COUNT(DISTINCT w.participante) as total_participantes
+    FROM department_store ds
+    LEFT JOIN wallet w ON w.cliente_id = ds.cliente_id
+    GROUP BY ds.cliente_id
+  )
+  SELECT jsonb_agg(row_to_json(d)::jsonb) INTO distributors_data
+  FROM (
+    SELECT 
+      ds.representante,
+      COALESCE(SUM(ppc.total_participantes), 0)::bigint as total_participantes,
+      COUNT(DISTINCT ds.cliente_id) as total_revendas,
+      COUNT(DISTINCT CASE 
+        WHEN COALESCE(ds.vendas, 0) > 500 THEN ds.cliente_id 
+      END) as revendas_ativas,
+      COUNT(DISTINCT CASE 
+        WHEN COALESCE(ds.vendas, 0) <= 500 THEN ds.cliente_id 
+      END) as revendas_inativas,
+      COALESCE(SUM(ds.vendas), 0) as vendas_totais
+    FROM distributor_summary ds
+    LEFT JOIN participantes_por_cliente_dist ppc ON ppc.cliente_id = ds.cliente_id
+    GROUP BY ds.representante
+    ORDER BY vendas_totais DESC
+  ) d;
+  
+  distributors_data := COALESCE(distributors_data, '[]'::jsonb);
+  
+  -- Global KPIs: Original transactions (no division)
+  SELECT jsonb_agg(row_to_json(t)::jsonb) INTO all_transactions
+  FROM transactions t;
+  
+  SELECT jsonb_agg(row_to_json(ds)::jsonb) INTO all_department_store
+  FROM department_store ds;
+  
+  RETURN jsonb_build_object(
+    'participants', COALESCE(participants_data, '[]'::jsonb),
+    'distributors', COALESCE(distributors_data, '[]'::jsonb),
+    'transactions', COALESCE(all_transactions, '[]'::jsonb),
+    'department_store', COALESCE(all_department_store, '[]'::jsonb)
+  );
+END;
+$function$;

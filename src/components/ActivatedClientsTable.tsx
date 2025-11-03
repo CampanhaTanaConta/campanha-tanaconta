@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Phone, Mail, MapPin, Users } from 'lucide-react';
 
 interface MonthlySales {
   outubro: number;
@@ -20,6 +21,9 @@ interface ActivatedClient {
   salesByMonth: MonthlySales;
   hasSolarSales: boolean;
   totalSolarSales: number;
+  compartilhado?: boolean;
+  num_participantes?: number;
+  outros_participantes?: string[];
 }
 
 interface ActivatedClientsTableProps {
@@ -71,6 +75,7 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                   <TableHead className="text-right">Nov/24</TableHead>
                   <TableHead className="text-right">Dez/24</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Compartilhamento</TableHead>
                   <TableHead className="text-right">Energia Solar</TableHead>
                 </TableRow>
               </TableHeader>
@@ -124,6 +129,30 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="font-bold text-primary">{formatCurrency(client.totalVendas)}</span>
+                    </TableCell>
+                    <TableCell>
+                      {client.compartilhado && client.num_participantes ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge variant="outline" className="gap-1">
+                                <Users className="h-3 w-3" />
+                                {client.num_participantes} participantes
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-semibold mb-1">Compartilhado com:</p>
+                              <ul className="text-xs space-y-1">
+                                {client.outros_participantes?.map((p, idx) => (
+                                  <li key={idx}>• {p}</li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Exclusivo</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {client.hasSolarSales ? (

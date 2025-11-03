@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Phone, Mail, MapPin, Users } from 'lucide-react';
 
 interface PendingClient {
   cliente_id: string;
@@ -12,6 +13,9 @@ interface PendingClient {
   telefone: string;
   totalVendas: number;
   status: string;
+  compartilhado?: boolean;
+  num_participantes?: number;
+  outros_participantes?: string[];
 }
 
 interface PendingClientsTableProps {
@@ -60,6 +64,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                   <TableHead>Revenda</TableHead>
                   <TableHead>Clique, faça contato e aumente seu prêmio</TableHead>
                   <TableHead>Total Vendas</TableHead>
+                  <TableHead>Compartilhamento</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -109,6 +114,30 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                           Faltam {formatCurrency(500 - client.totalVendas)}
                         </p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {client.compartilhado && client.num_participantes ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge variant="outline" className="gap-1">
+                                <Users className="h-3 w-3" />
+                                {client.num_participantes} participantes
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-semibold mb-1">Compartilhado com:</p>
+                              <ul className="text-xs space-y-1">
+                                {client.outros_participantes?.map((p, idx) => (
+                                  <li key={idx}>• {p}</li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Exclusivo</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={client.totalVendas > 0 ? "secondary" : "outline"}>
