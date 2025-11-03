@@ -135,36 +135,42 @@ export const MultiPurposeChart = ({
             />
             <Bar 
               dataKey="Ativados" 
+              stackId="a"
               fill={colorMap['Ativados']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Não Ativados" 
+              stackId="a"
               fill={colorMap['Não Ativados']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Com Solar" 
+              stackId="b"
               fill={colorMap['Com Solar']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Sem Solar" 
+              stackId="b"
               fill={colorMap['Sem Solar']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="≥ R$30k" 
+              stackId="c"
               fill={colorMap['≥ R$30k']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="< R$30k" 
+              stackId="c"
               fill={colorMap['< R$30k']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
