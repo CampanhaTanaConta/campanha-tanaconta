@@ -603,6 +603,44 @@ const Admin = () => {
               </CardContent>
             </Card>
 
+            {result && (
+              <Card className="border-success">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-success">
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Dados Carregados com Sucesso
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm">
+                    <strong>Participantes:</strong> {result.participants} registros
+                  </p>
+                  <p className="text-sm">
+                    <strong>Carteira:</strong> {result.wallet} registros
+                  </p>
+                  <p className="text-sm">
+                    <strong>Transações:</strong> {result.transactions} registros
+                  </p>
+                  <p className="text-sm">
+                    <strong>Estabelecimentos:</strong> {result.departmentStore} registros
+                  </p>
+                  {result.errors && result.errors.length > 0 && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>Erros encontrados:</strong>
+                        <ul className="list-disc list-inside mt-2">
+                          {result.errors.map((error, i) => (
+                            <li key={i}>{error}</li>
+                          ))}
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciar Administradores</CardTitle>
@@ -716,44 +754,6 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
-
-          {result && (
-            <Card className="border-success">
-              <CardHeader>
-                <CardTitle className="flex items-center text-success">
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Dados Carregados com Sucesso
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm">
-                  <strong>Participantes:</strong> {result.participants} registros
-                </p>
-                <p className="text-sm">
-                  <strong>Carteira:</strong> {result.wallet} registros
-                </p>
-                <p className="text-sm">
-                  <strong>Transações:</strong> {result.transactions} registros
-                </p>
-                <p className="text-sm">
-                  <strong>Estabelecimentos:</strong> {result.departmentStore} registros
-                </p>
-                {result.errors && result.errors.length > 0 && (
-                  <Alert variant="destructive" className="mt-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Erros encontrados:</strong>
-                      <ul className="list-disc list-inside mt-2">
-                        {result.errors.map((error, i) => (
-                          <li key={i}>{error}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>
