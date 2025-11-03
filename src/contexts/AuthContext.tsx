@@ -21,33 +21,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = async () => {
-      // Check if user is logged in from localStorage
-      const storedEmail = localStorage.getItem('userEmail');
-      const storedParticipante = localStorage.getItem('participante');
-      
-      if (storedEmail && storedParticipante) {
-        setUserEmail(storedEmail);
-        setParticipante(storedParticipante);
-        
-        // CRITICAL: Set session in database for RLS policies
-        try {
-          await supabase.rpc('set_user_session', {
-            p_email: storedEmail,
-            p_participante: storedParticipante
-          });
-        } catch (error) {
-          console.error('Error setting user session:', error);
-        }
-        
-        // Check admin status from database (never trust localStorage)
-        await checkAdminStatus(storedEmail);
-      }
-      
-      setIsLoading(false);
-    };
-
-    initAuth();
+    // Check if user is logged in from localStorage
+    const storedEmail = localStorage.getItem('userEmail');
+    const storedParticipante = localStorage.getItem('participante');
+    
+    if (storedEmail && storedParticipante) {
+      setUserEmail(storedEmail);
+      setParticipante(storedParticipante);
+      // Check admin status from database (never trust localStorage)
+      checkAdminStatus(storedEmail);
+    }
+    
+    setIsLoading(false);
   }, []);
 
   const checkEmail = async (email: string) => {
