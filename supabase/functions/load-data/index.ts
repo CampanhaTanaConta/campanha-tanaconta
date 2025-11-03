@@ -281,10 +281,16 @@ Deno.serve(async (req) => {
             // Parse total parcela
             const totalParcelaNum = parseBrazilianNumber(totalParcelaStr);
 
-            // Normalize percentage (handle 10, 10%, 0.10, 0,10)
+            // Normalize percentage (handle 10, 10%, 0.10%, 0,10%)
+            const hasPercent = premiacaoPctStr.includes('%');
             const premiacaoPctCleaned = premiacaoPctStr.replace('%', '').replace(',', '.');
             let premiacaoPctNorm = parseFloat(premiacaoPctCleaned) || 0;
-            if (premiacaoPctNorm > 1) {
+            
+            // If the original had a % sign, the number is already a percentage, so divide by 100
+            // If not, and the number is > 1, assume it's an integer percentage (e.g., "10" means 10%)
+            if (hasPercent) {
+              premiacaoPctNorm = premiacaoPctNorm / 100;
+            } else if (premiacaoPctNorm > 1) {
               premiacaoPctNorm = premiacaoPctNorm / 100;
             }
 
