@@ -27,21 +27,32 @@ function normalizeCnpj(value: string): string | null {
   return digits.padStart(14, '0');
 }
 
-// Utility: Find column index by header name (case-insensitive, accent-insensitive)
+// Utility: Find column index by header name (case-insensitive, accent-insensitive, punctuation-insensitive)
 function getIndex(headers: string[], candidates: string[]): number {
   const normalize = (s: string) =>
     s
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s]/g, '') // Remove punctuation
       .replace(/\s+/g, '');
 
   const normalizedHeaders = headers.map(normalize);
+  
+  // First pass: exact match
   for (const candidate of candidates) {
     const normalizedCandidate = normalize(candidate);
     const idx = normalizedHeaders.indexOf(normalizedCandidate);
     if (idx !== -1) return idx;
   }
+  
+  // Second pass: contains match
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalize(candidate);
+    const idx = normalizedHeaders.findIndex(h => h.includes(normalizedCandidate) || normalizedCandidate.includes(h));
+    if (idx !== -1) return idx;
+  }
+  
   return -1;
 }
 
@@ -157,15 +168,20 @@ Deno.serve(async (req) => {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[Wallet] Headers:', headers);
 
-          const idxClienteNome = getIndex(headers, ['Cliente', 'Razão Social', 'Nome']);
-          const idxClienteId = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'Documento']);
-          const idxDistribuidor = getIndex(headers, ['Distribuidor']);
-          const idxParticipante = getIndex(headers, ['Participante', 'Vendedor', 'Consultor']);
+          const idxClienteNome = getIndex(headers, ['Cliente', 'Razão Social', 'Nome', 'Estab Comercial', 'Estabelecimento']);
+          const idxClienteId = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'CPF/CNPJ Estab Comercial', 'CNPJ/CPF', 'Documento']);
+          const idxDistribuidor = getIndex(headers, ['Distribuidor', 'Representante', 'Responsável']);
+          const idxParticipante = getIndex(headers, ['Participante', 'Vendedor', 'Consultor', 'Responsável']);
 
           console.log('[Wallet] Column indices:', { idxClienteNome, idxClienteId, idxDistribuidor, idxParticipante });
 
-          // Clear existing wallet data
-          await supabaseClient.from('wallet').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          // Validate required columns
+          if (idxClienteId === -1 || idxParticipante === -1) {
+            results.errors.push('Wallet: Colunas obrigatórias não encontradas (CNPJ e Participante)');
+            console.error('[Wallet] Missing required columns. Headers:', headers);
+          } else {
+            // Clear existing wallet data only if we have valid columns
+            await supabaseClient.from('wallet').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
           // Process data rows (skip header)
           for (let i = 1; i < records.length; i++) {
@@ -190,6 +206,7 @@ Deno.serve(async (req) => {
             });
 
             if (!error) results.wallet++;
+          }
           }
         }
       } catch (error) {
@@ -218,16 +235,21 @@ Deno.serve(async (req) => {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[Transactions] Headers:', headers);
 
-          const idxClienteId = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'Documento']);
-          const idxDataTransacao = getIndex(headers, ['Data', 'Data Transação', 'Data Transacao', 'Emissão', 'Emissao']);
-          const idxTipoVenda = getIndex(headers, ['Tipo Venda', 'Categoria', 'Produto']);
-          const idxTotalParcela = getIndex(headers, ['Total Parcela', 'Valor', 'Total']);
+          const idxClienteId = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'CPF/CNPJ Estab Comercial', 'CNPJ/CPF', 'Documento']);
+          const idxDataTransacao = getIndex(headers, ['Data', 'Data Transação', 'Data Transacao', 'Emissão', 'Emissao', 'Data Emissao']);
+          const idxTipoVenda = getIndex(headers, ['Tipo Venda', 'Tipo da Venda', 'Categoria', 'Produto', 'Tipo']);
+          const idxTotalParcela = getIndex(headers, ['Total Parcela', 'Total Parcela(R$)', 'Valor Líquido', 'Valor Liquido', 'Valor', 'Total']);
           const idxPremiacaoPct = getIndex(headers, ['Premiação %', 'Premiacao %', 'Premiação', 'Premiacao', 'Comissão %', 'Comissao %']);
 
           console.log('[Transactions] Column indices:', { idxClienteId, idxDataTransacao, idxTipoVenda, idxTotalParcela, idxPremiacaoPct });
 
-          // Clear existing transactions
-          await supabaseClient.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          // Validate required columns
+          if (idxClienteId === -1 || idxDataTransacao === -1 || idxTipoVenda === -1 || idxTotalParcela === -1) {
+            results.errors.push('Transactions: Colunas obrigatórias não encontradas (CNPJ, Data, Tipo e Valor)');
+            console.error('[Transactions] Missing required columns. Headers:', headers);
+          } else {
+            // Clear existing transactions only if we have valid columns
+            await supabaseClient.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
           // Process data rows (skip header)
           for (let i = 1; i < records.length; i++) {
@@ -276,6 +298,7 @@ Deno.serve(async (req) => {
             });
 
             if (!error) results.transactions++;
+          }
           }
         }
       } catch (error) {
