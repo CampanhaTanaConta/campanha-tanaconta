@@ -50,22 +50,22 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Clientes Ativados</CardTitle>
+        <CardTitle>Revendas Ativadas</CardTitle>
         <CardDescription>
-          Clientes que atingiram R$ 500 em vendas - Vendas mensais detalhadas
+          Revendas que atingiram R$ 500 em vendas - Vendas mensais detalhadas
         </CardDescription>
       </CardHeader>
       <CardContent>
         {clients.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            Nenhum cliente ativado ainda
+            Nenhuma revenda ativada ainda
           </p>
         ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Revenda</TableHead>
                   <TableHead>Localização</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead className="text-right">Out/24</TableHead>

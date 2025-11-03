@@ -167,7 +167,7 @@ const Dashboard = () => {
           .filter(([_, total]) => total > 0 && total <= 500)
           .reduce((sum, [_, val]) => sum + val, 0);
         
-        const noSalesValue = 0; // Clientes sem vendas têm valor 0
+        const noSalesValue = 0; // Revendas sem vendas têm valor 0
 
         // Calculate partners with R$30k+ in sales
         const partners30kPlusCount = Object.values(salesByClient).filter(total => total >= 30000).length;
@@ -194,7 +194,7 @@ const Dashboard = () => {
           return acc;
         }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
 
-        // Calcular quais clientes venderam Energia Solar
+        // Calcular quais revendas venderam Energia Solar
         const clientsWithSolarSales = new Set(
           transactions
             ?.filter(t => t.tipo_venda === 'Energia Solar')
@@ -204,7 +204,7 @@ const Dashboard = () => {
         const solarSalesClients = clientsWithSolarSales.size;
         const nonSolarSalesClients = totalClients - solarSalesClients;
 
-        // Calcular vendas de Energia Solar por cliente
+        // Calcular vendas de Energia Solar por revenda
         const solarSalesByClient = transactions?.reduce((acc, t) => {
           if (t.tipo_venda === 'Energia Solar') {
             const clientId = t.cliente_id;
@@ -427,7 +427,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Status de Ativação</CardTitle>
-                  <CardDescription>Distribuição de clientes por status</CardDescription>
+                  <CardDescription>Distribuição de revendas por status</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>

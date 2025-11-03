@@ -42,22 +42,22 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Clientes Pendentes de Ativação</CardTitle>
+        <CardTitle>Revendas Pendentes de Ativação</CardTitle>
         <CardDescription>
-          Clientes que ainda não atingiram R$ 500 em vendas
+          Revendas que ainda não atingiram R$ 500 em vendas
         </CardDescription>
       </CardHeader>
       <CardContent>
         {clients.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            Todos os clientes estão ativados! 🎉
+            Todas as revendas estão ativadas! 🎉
           </p>
         ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente</TableHead>
+                  <TableHead>Revenda</TableHead>
                   <TableHead>Localização</TableHead>
                   <TableHead>Contato</TableHead>
                   <TableHead>Total Vendas</TableHead>

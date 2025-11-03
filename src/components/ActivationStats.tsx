@@ -21,7 +21,7 @@ export const ActivationStats = ({
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+          <CardTitle className="text-sm font-medium">Total de Revendas</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -34,7 +34,7 @@ export const ActivationStats = ({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Clientes Ativados</CardTitle>
+          <CardTitle className="text-sm font-medium">Revendas Ativadas</CardTitle>
           <Target className="h-4 w-4 text-success" />
         </CardHeader>
         <CardContent>
@@ -66,7 +66,7 @@ export const ActivationStats = ({
           {solarSalesClients}
         </div>
         <p className="text-xs text-muted-foreground">
-          {solarSalesClients === 1 ? 'Cliente vendeu' : 'Clientes venderam'} Energia Solar
+          {solarSalesClients === 1 ? 'Revenda vendeu' : 'Revendas venderam'} Energia Solar
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {nonSolarSalesClients} ainda {nonSolarSalesClients === 1 ? 'não vendeu' : 'não venderam'}
