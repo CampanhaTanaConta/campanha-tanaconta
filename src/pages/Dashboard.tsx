@@ -117,7 +117,9 @@ const Dashboard = () => {
       
       // If admin, fetch global data; otherwise fetch participant-specific data
       if (isAdmin) {
-        const { data, error } = await supabase.rpc('get_admin_dashboard_data');
+        const { data, error } = await supabase.rpc('get_admin_dashboard_data', {
+          p_email: userEmail
+        });
         if (error) throw error;
         dashboardSlices = data;
         
