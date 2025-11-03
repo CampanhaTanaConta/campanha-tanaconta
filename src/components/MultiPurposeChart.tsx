@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface MultiPurposeChartProps {
   activatedCount: number;
@@ -21,26 +21,73 @@ export const MultiPurposeChart = ({
   const chartData = [
     {
       categoria: 'Ativação',
-      positivo: activatedCount,
-      negativo: notActivatedCount,
-      positivoLabel: 'Ativos',
-      negativoLabel: 'Não Ativados'
+      'Ativados': activatedCount,
+      'Não Ativados': notActivatedCount,
     },
     {
       categoria: 'Energia Solar',
-      positivo: solarClientsCount,
-      negativo: nonSolarClientsCount,
-      positivoLabel: 'Com Solar',
-      negativoLabel: 'Sem Solar'
+      'Com Solar': solarClientsCount,
+      'Sem Solar': nonSolarClientsCount,
     },
     {
       categoria: 'Parceiros R$30k+',
-      positivo: partners30kPlusCount,
-      negativo: partnersBelow30kCount,
-      positivoLabel: '≥ R$30k',
-      negativoLabel: '< R$30k'
+      '≥ R$30k': partners30kPlusCount,
+      '< R$30k': partnersBelow30kCount,
     }
   ];
+
+  // Map de cores para cada categoria
+  const colorMap: Record<string, string> = {
+    'Ativados': 'hsl(var(--success))',
+    'Com Solar': 'hsl(var(--success))',
+    '≥ R$30k': 'hsl(var(--success))',
+    'Não Ativados': 'hsl(var(--muted))',
+    'Sem Solar': 'hsl(var(--muted))',
+    '< R$30k': 'hsl(var(--muted))',
+  };
+
+  const renderCustomLabel = (props: any) => {
+    const { x, y, width, height, value, fill } = props;
+    if (height < 15) return null;
+    
+    const labelColor = fill === 'hsl(var(--success))' ? 'white' : '#4B5563';
+    
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y + height / 2} 
+        fill={labelColor}
+        textAnchor="middle" 
+        dominantBaseline="central"
+        fontSize={13}
+        fontWeight={600}
+      >
+        {value}
+      </text>
+    );
+  };
+
+  const renderLegend = (props: any) => {
+    const { payload } = props;
+    return (
+      <div className="flex justify-center gap-6 mb-4">
+        {payload.map((entry: any, index: number) => {
+          const isPositive = entry.value === 'Ativados' || entry.value === 'Com Solar' || entry.value === '≥ R$30k';
+          const bgColor = isPositive ? 'bg-success' : 'bg-muted';
+          const textColor = isPositive ? 'text-white' : 'text-muted-foreground';
+          
+          return (
+            <div key={`legend-${index}`} className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded ${bgColor}`} />
+              <span className={`text-sm font-medium ${textColor}`}>
+                {entry.value}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <Card>
@@ -49,11 +96,15 @@ export const MultiPurposeChart = ({
         <CardDescription>Comparativo de métricas principais</CardDescription>
       </CardHeader>
       <CardContent>
+        <Legend 
+          content={renderLegend}
+          verticalAlign="top"
+          height={50}
+        />
         <ResponsiveContainer width="100%" height={300}>
           <BarChart 
             data={chartData}
-            layout="horizontal"
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 0, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="categoria" />
@@ -61,15 +112,20 @@ export const MultiPurposeChart = ({
             <Tooltip 
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const data = payload[0].payload;
+                  const total = payload.reduce((sum, entry) => sum + (entry.value as number), 0);
                   return (
                     <div className="bg-background border rounded-lg p-3 shadow-lg">
-                      <p className="font-semibold mb-2">{data.categoria}</p>
-                      <p className="text-sm text-success">
-                        {data.positivoLabel}: <span className="font-semibold">{data.positivo}</span>
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {data.negativoLabel}: <span className="font-semibold">{data.negativo}</span>
+                      <p className="font-semibold mb-2">{payload[0].payload.categoria}</p>
+                      {payload.map((entry, index) => {
+                        const isPositive = entry.name === 'Ativados' || entry.name === 'Com Solar' || entry.name === '≥ R$30k';
+                        return (
+                          <p key={index} className={`text-sm ${isPositive ? 'text-success' : 'text-muted-foreground'}`}>
+                            {entry.name}: <span className="font-semibold">{entry.value}</span>
+                          </p>
+                        );
+                      })}
+                      <p className="text-xs text-muted-foreground mt-1 pt-1 border-t">
+                        Total: {total}
                       </p>
                     </div>
                   );
@@ -78,48 +134,46 @@ export const MultiPurposeChart = ({
               }}
             />
             <Bar 
-              dataKey="positivo" 
-              fill="hsl(var(--success))"
+              dataKey="Ativados" 
+              stackId="a"
+              fill={colorMap['Ativados']}
               radius={[8, 8, 0, 0]}
-              label={(props: any) => {
-                const { x, y, width, height, value } = props;
-                if (height < 20) return null; // Não mostrar label se barra muito pequena
-                return (
-                  <text 
-                    x={x + width / 2} 
-                    y={y + height / 2} 
-                    fill="white" 
-                    textAnchor="middle" 
-                    dominantBaseline="central"
-                    fontSize={14}
-                    fontWeight={700}
-                  >
-                    {value}
-                  </text>
-                );
-              }}
+              label={renderCustomLabel}
             />
             <Bar 
-              dataKey="negativo" 
-              fill="hsl(var(--muted))"
+              dataKey="Não Ativados" 
+              stackId="a"
+              fill={colorMap['Não Ativados']}
               radius={[8, 8, 0, 0]}
-              label={(props: any) => {
-                const { x, y, width, height, value } = props;
-                if (height < 20) return null; // Não mostrar label se barra muito pequena
-                return (
-                  <text 
-                    x={x + width / 2} 
-                    y={y + height / 2} 
-                    fill="hsl(var(--muted-foreground))" 
-                    textAnchor="middle" 
-                    dominantBaseline="central"
-                    fontSize={14}
-                    fontWeight={700}
-                  >
-                    {value}
-                  </text>
-                );
-              }}
+              label={renderCustomLabel}
+            />
+            <Bar 
+              dataKey="Com Solar" 
+              stackId="b"
+              fill={colorMap['Com Solar']}
+              radius={[8, 8, 0, 0]}
+              label={renderCustomLabel}
+            />
+            <Bar 
+              dataKey="Sem Solar" 
+              stackId="b"
+              fill={colorMap['Sem Solar']}
+              radius={[8, 8, 0, 0]}
+              label={renderCustomLabel}
+            />
+            <Bar 
+              dataKey="≥ R$30k" 
+              stackId="c"
+              fill={colorMap['≥ R$30k']}
+              radius={[8, 8, 0, 0]}
+              label={renderCustomLabel}
+            />
+            <Bar 
+              dataKey="< R$30k" 
+              stackId="c"
+              fill={colorMap['< R$30k']}
+              radius={[8, 8, 0, 0]}
+              label={renderCustomLabel}
             />
           </BarChart>
         </ResponsiveContainer>

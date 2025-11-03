@@ -22,7 +22,7 @@ export const ActivationStats = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total de Revendas</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
+          <Users className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalClients}</div>
@@ -35,7 +35,7 @@ export const ActivationStats = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Revendas Ativadas</CardTitle>
-          <Target className="h-4 w-4 text-success" />
+          <Target className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-success">{activatedClients}</div>
@@ -48,7 +48,7 @@ export const ActivationStats = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Taxa de Ativação</CardTitle>
-          <TrendingUp className="h-4 w-4 text-primary" />
+          <TrendingUp className="h-4 w-4 text-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{activationRate.toFixed(1)}%</div>
@@ -59,7 +59,7 @@ export const ActivationStats = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Vendas de Energia Solar</CardTitle>
-          <Target className="h-4 w-4 text-accent" />
+          <Target className="h-4 w-4 text-foreground" />
         </CardHeader>
       <CardContent>
         <div className={`text-2xl font-bold ${solarSalesClients === 0 ? 'text-destructive' : 'text-accent'}`}>

@@ -344,7 +344,7 @@ const Dashboard = () => {
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Vendas Totais</CardTitle>
-              <DollarSign className="h-5 w-5 text-primary" />
+              <DollarSign className="h-5 w-5 text-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-primary">{formatCurrency(kpis.vendas)}</div>
@@ -355,7 +355,7 @@ const Dashboard = () => {
           <Card className="border-success/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Premiação Atual</CardTitle>
-              <TrendingUp className="h-5 w-5 text-success" />
+              <TrendingUp className="h-5 w-5 text-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-success">{formatCurrency(kpis.premiacaoAtual)}</div>
@@ -366,7 +366,7 @@ const Dashboard = () => {
           <Card className="border-warning/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Premiação Estimada</CardTitle>
-              <TrendingUp className="h-5 w-5 text-warning" />
+              <TrendingUp className="h-5 w-5 text-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-warning">{formatCurrency(kpis.premiacaoEstimada)}</div>
@@ -378,7 +378,7 @@ const Dashboard = () => {
             <Card className="border-destructive/50 shadow-lg hover:shadow-xl transition-shadow bg-destructive/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-destructive">Status da Premiação</CardTitle>
-                <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
+                <AlertTriangle className="h-5 w-5 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-destructive mb-2">
@@ -396,7 +396,7 @@ const Dashboard = () => {
             <Card className="border-success/50 shadow-lg hover:shadow-xl transition-shadow bg-success/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-success">Status da Premiação</CardTitle>
-                <CheckCircle2 className="h-5 w-5 text-success" />
+                <CheckCircle2 className="h-5 w-5 text-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-success mb-2">
@@ -471,7 +471,7 @@ const Dashboard = () => {
                             <text 
                               x={x} 
                               y={y} 
-                              fill="white" 
+                              fill={index === 2 ? "#4B5563" : "white"} 
                               textAnchor="middle"
                               dominantBaseline="central"
                               fontSize={12}
