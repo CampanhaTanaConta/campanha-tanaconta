@@ -598,16 +598,16 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-primary/5">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img src={logo} alt="Logo" className="h-12 w-12" />
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Dashboard Campanha Tá na Conta e no Cartão</h1>
+              <h1 className="text-lg md:text-2xl font-bold text-foreground">Dashboard Campanha Tá na Conta e no Cartão</h1>
               <p className="text-sm text-muted-foreground">Olá, {participante}</p>
             </div>
           </div>
           
-          <div className="flex flex-col items-end gap-1 mr-4">
+          <div className="flex flex-col items-start md:items-end gap-1 w-full md:w-auto">
             <p className="text-sm font-medium text-foreground">
               Dashboard atualizado em <span className="underline">{formatDate(lastUpdateDate)}</span>
             </p>
@@ -616,7 +616,7 @@ const Dashboard = () => {
             </p>
           </div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-4 w-full md:w-auto justify-end">
             {isAdmin && (
               <Button variant="outline" onClick={() => navigate('/admin')}>
                 Admin
