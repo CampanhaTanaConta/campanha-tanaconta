@@ -649,6 +649,9 @@ const Admin = () => {
                   <p className="text-sm">
                     <strong>Estabelecimentos:</strong> {result.departmentStore} registros
                   </p>
+                  <p className="text-sm">
+                    <strong>Vendas Solares:</strong> {result.solarSales} registros
+                  </p>
                   {result.errors && result.errors.length > 0 && (
                     <Alert variant="destructive" className="mt-4">
                       <AlertCircle className="h-4 w-4" />
