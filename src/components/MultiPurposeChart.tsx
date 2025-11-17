@@ -53,6 +53,10 @@ export const MultiPurposeChart = ({
 
   const renderCustomLabel = (props: any) => {
     const { x, y, width, height, payload, dataKey, fill } = props;
+    
+    // Verificar se payload e dataKey existem antes de acessar
+    if (!payload || !dataKey) return null;
+    
     const value = payload[dataKey];
     if (!value || value === 0 || height < 15) return null;
     
