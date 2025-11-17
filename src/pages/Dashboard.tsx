@@ -115,17 +115,41 @@ const Dashboard = () => {
   ): number => {
     let potencialTotal = 0;
     
+    // Obter data atual para determinar quais meses já passaram
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth(); // 0-11 (0=Janeiro, 9=Outubro, 10=Novembro, 11=Dezembro)
+    const anoAtual = hoje.getFullYear();
+    
+    // Verificar se cada mês da campanha já passou completamente
+    const outubroPassou = (anoAtual === 2025 && mesAtual > 9) || anoAtual > 2025;
+    const novembroPassou = (anoAtual === 2025 && mesAtual > 10) || anoAtual > 2025;
+    const dezembroPassou = (anoAtual === 2025 && mesAtual > 11) || anoAtual > 2025;
+    
     allClientIds.forEach(clientId => {
       const clientSales = salesByClientAndMonth[clientId] || { outubro: 0, novembro: 0, dezembro: 0 };
       
-      // Outubro (metade do mês): R$ 15.000 ou valor real se > R$ 15.000
-      potencialTotal += Math.max(15000, clientSales.outubro);
+      // Outubro: R$ 15.000 de potencial (metade do mês)
+      if (outubroPassou) {
+        // Mês já passou: usar valor real
+        potencialTotal += clientSales.outubro;
+      } else {
+        // Mês atual ou futuro: usar max(potencial, valor real)
+        potencialTotal += Math.max(15000, clientSales.outubro);
+      }
       
-      // Novembro: R$ 30.000 ou valor real se > R$ 30.000
-      potencialTotal += Math.max(30000, clientSales.novembro);
+      // Novembro: R$ 30.000 de potencial
+      if (novembroPassou) {
+        potencialTotal += clientSales.novembro;
+      } else {
+        potencialTotal += Math.max(30000, clientSales.novembro);
+      }
       
-      // Dezembro: R$ 30.000 ou valor real se > R$ 30.000
-      potencialTotal += Math.max(30000, clientSales.dezembro);
+      // Dezembro: R$ 30.000 de potencial
+      if (dezembroPassou) {
+        potencialTotal += clientSales.dezembro;
+      } else {
+        potencialTotal += Math.max(30000, clientSales.dezembro);
+      }
     });
     
     return potencialTotal;
