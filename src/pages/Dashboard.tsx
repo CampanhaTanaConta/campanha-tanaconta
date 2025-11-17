@@ -139,31 +139,26 @@ const Dashboard = () => {
       }
 
       // ========== Buscar data de última atualização (universal para todos) ==========
-      let currentLastUpdateDate: Date = new Date();
+      // Usa função RPC que ignora RLS e retorna a data global do último upload
+      let currentLastUpdateDate: Date | null = null;
       try {
-        const { data: lastUpdate } = await supabase
-          .from('transactions')
-          .select('created_at')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (lastUpdate?.created_at) {
+        const { data, error } = await supabase.rpc('get_last_upload_date');
+        if (error) throw error;
+        if (data) {
           // Extrair data em UTC para evitar conversão de timezone
-          const tempDate = new Date(lastUpdate.created_at);
+          const tempDate = new Date(data);
           currentLastUpdateDate = new Date(Date.UTC(
             tempDate.getUTCFullYear(),
             tempDate.getUTCMonth(),
             tempDate.getUTCDate()
           ));
-        } else {
-          currentLastUpdateDate = new Date();
         }
+        // Se não há data, mantém null (formatDate mostrará "--/--/----")
       } catch (error) {
         console.warn('Erro ao buscar data de atualização:', error);
-        currentLastUpdateDate = new Date();
+        // Sem fallback para "hoje" - mantém null para não mostrar data errada
       }
-      // Atualiza o estado para exibição; cálculos usam a variável local
+      // Atualiza o estado para exibição
       setLastUpdateDate(currentLastUpdateDate);
 
       // Extract data from RPC response with proper typing
