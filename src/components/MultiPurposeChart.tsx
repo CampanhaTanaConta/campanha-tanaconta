@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 interface MultiPurposeChartProps {
   activatedCount: number;
@@ -51,17 +51,29 @@ export const MultiPurposeChart = ({
   const colorPositivo = 'hsl(var(--success))';
   const colorNegativo = 'hsl(var(--muted))';
 
-  const renderCustomLabel = (props: any) => {
-    const { x, y, width, height, payload, dataKey, fill } = props;
-    
-    // Verificar se payload e dataKey existem antes de acessar
-    if (!payload || !dataKey) return null;
-    
-    const value = payload[dataKey];
+  const renderPosLabel = (props: any) => {
+    const { x, y, width, height, value } = props;
     if (!value || value === 0 || height < 15) return null;
-    
-    const labelColor = fill === colorPositivo ? 'white' : '#4B5563';
-    
+    const labelColor = 'white';
+    return (
+      <text 
+        x={x + width / 2} 
+        y={y + height / 2} 
+        fill={labelColor}
+        textAnchor="middle" 
+        dominantBaseline="central"
+        fontSize={13}
+        fontWeight={600}
+      >
+        {value}
+      </text>
+    );
+  };
+
+  const renderNegLabel = (props: any) => {
+    const { x, y, width, height, value } = props;
+    if (!value || value === 0 || height < 15) return null;
+    const labelColor = '#4B5563';
     return (
       <text 
         x={x + width / 2} 
@@ -124,15 +136,17 @@ export const MultiPurposeChart = ({
               stackId="stack"
               fill={colorNegativo}
               radius={[0, 0, 0, 0]}
-              label={renderCustomLabel}
-            />
+            >
+              <LabelList dataKey="negativo" content={renderNegLabel} />
+            </Bar>
             <Bar 
               dataKey="positivo" 
               stackId="stack"
               fill={colorPositivo}
               radius={[8, 8, 0, 0]}
-              label={renderCustomLabel}
-            />
+            >
+              <LabelList dataKey="positivo" content={renderPosLabel} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
