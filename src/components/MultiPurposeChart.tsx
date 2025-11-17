@@ -52,7 +52,8 @@ export const MultiPurposeChart = ({
   const colorNegativo = 'hsl(var(--muted))';
 
   const renderCustomLabel = (props: any) => {
-    const { x, y, width, height, value, fill } = props;
+    const { x, y, width, height, payload, dataKey, fill } = props;
+    const value = payload[dataKey];
     if (!value || value === 0 || height < 15) return null;
     
     const labelColor = fill === colorPositivo ? 'white' : '#4B5563';
