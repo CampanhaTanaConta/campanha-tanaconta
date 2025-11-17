@@ -13,10 +13,12 @@ interface LoadDataRequest {
   walletUrl?: string;
   transactionsUrl?: string;
   departmentStoreUrl?: string;
+  solarSalesUrl?: string;
   participantsContent?: string;
   walletContent?: string;
   transactionsContent?: string;
   departmentStoreContent?: string;
+  solarSalesContent?: string;
 }
 
 // Utility: Normalize CNPJ to 14 digits (remove non-digits, left-pad with zeros)
@@ -80,10 +82,12 @@ Deno.serve(async (req) => {
       walletUrl, 
       transactionsUrl, 
       departmentStoreUrl,
+      solarSalesUrl,
       participantsContent,
       walletContent,
       transactionsContent,
-      departmentStoreContent
+      departmentStoreContent,
+      solarSalesContent
     }: LoadDataRequest = await req.json();
 
     const results = {
@@ -91,6 +95,7 @@ Deno.serve(async (req) => {
       wallet: 0,
       transactions: 0,
       departmentStore: 0,
+      solarSales: 0,
       errors: [] as string[],
       stats: {
         walletIds: 0,
@@ -252,6 +257,9 @@ Deno.serve(async (req) => {
             // Clear existing transactions only if we have valid columns
             await supabaseClient.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
+            // Check if we have a dedicated solar sales file
+            const hasSolarFile = !!(solarSalesContent || solarSalesUrl);
+
           // Process data rows (skip header)
           for (let i = 1; i < records.length; i++) {
             const record = records[i];
@@ -266,6 +274,12 @@ Deno.serve(async (req) => {
 
             if (!clienteId || !dataTransacao || !tipoVenda) {
               console.log('[Transactions] Skipping row', i, '- missing CNPJ, date, or tipo');
+              continue;
+            }
+
+            // Skip Energia Solar rows if dedicated file is provided
+            if (hasSolarFile && tipoVenda === 'Energia Solar') {
+              console.log('[Transactions] Skipping Solar row', i, '- dedicated file provided');
               continue;
             }
 
@@ -441,6 +455,107 @@ Deno.serve(async (req) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error('[Department Store] Error:', errorMessage);
         results.errors.push(`Department Store: ${errorMessage}`);
+      }
+    }
+
+    // Load solar sales data
+    if (solarSalesContent || solarSalesUrl) {
+      try {
+        let csvText: string;
+        if (solarSalesContent) {
+          csvText = solarSalesContent;
+        } else {
+          const response = await fetch(solarSalesUrl!);
+          csvText = await response.text();
+        }
+        const records = parse(csvText, { skipFirstRow: false });
+        console.log('[SolarSales] Total records:', records.length);
+
+        if (records.length === 0) {
+          results.errors.push('Solar Sales: CSV vazio');
+        } else {
+          const headers = records[0].map((h: any) => String(h).trim());
+          console.log('[SolarSales] Headers:', headers);
+
+          // Map columns
+          const idxCnpj = getIndex(headers, ['CNPJ', 'CPF/CNPJ']);
+          const idxDataProgramada = getIndex(headers, ['Data Programada', 'Data']);
+          const idxValor = getIndex(headers, ['Valor']);
+          const idxRevenda = getIndex(headers, ['Revenda']);
+
+          console.log('[SolarSales] Column indices:', { 
+            idxCnpj, idxDataProgramada, idxValor, idxRevenda 
+          });
+
+          // Validate required columns
+          if (idxCnpj === -1 || idxDataProgramada === -1 || idxValor === -1) {
+            results.errors.push('Solar Sales: Colunas obrigatórias não encontradas (CNPJ, Data, Valor)');
+            console.error('[SolarSales] Missing required columns. Headers:', headers);
+          } else {
+            // Process rows (skip header)
+            for (let i = 1; i < records.length; i++) {
+              const record = records[i];
+              
+              const cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
+              const dataProgramada = idxDataProgramada >= 0 ? String(record[idxDataProgramada] || '').trim() : '';
+              const valorStr = idxValor >= 0 ? String(record[idxValor] || '0').trim() : '0';
+              const revenda = idxRevenda >= 0 ? String(record[idxRevenda] || '').trim() : '';
+
+              const clienteId = normalizeCnpj(cnpjRaw);
+
+              if (!clienteId || !dataProgramada) {
+                console.log('[SolarSales] Skipping row', i, '- missing CNPJ or date');
+                continue;
+              }
+
+              // Parse date (format can be yyyy-mm-dd or dd/mm/yyyy)
+              let parsedDate: string;
+              if (dataProgramada.includes('-')) {
+                // Format: 2025-11-12
+                parsedDate = dataProgramada;
+              } else if (dataProgramada.includes('/')) {
+                // Format: 12/11/2025
+                const [day, month, year] = dataProgramada.split('/');
+                if (!day || !month || !year) {
+                  console.log('[SolarSales] Skipping row', i, '- invalid date format:', dataProgramada);
+                  continue;
+                }
+                parsedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else {
+                console.log('[SolarSales] Skipping row', i, '- unrecognized date format:', dataProgramada);
+                continue;
+              }
+
+              // Parse value (Brazilian format)
+              const valor = parseBrazilianNumber(valorStr);
+              
+              // Fixed reward: 0.2% for Solar Energy sales
+              const premiacaoPct = 0.2;
+              const premiacaoValor = valor * 0.20;
+
+              // Insert transaction as "Energia Solar"
+              const { error } = await supabaseClient.from('transactions').insert({
+                cliente_id: clienteId,
+                data_transacao: parsedDate,
+                tipo_venda: 'Energia Solar',
+                total_parcela: valor,
+                premiacao_pct_norm: premiacaoPct,
+                premiacao_valor: premiacaoValor,
+                estab_comercial: revenda || null,
+              });
+
+              if (!error) {
+                results.solarSales++;
+              } else {
+                console.error('[SolarSales] Insert error for row', i, ':', error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.errors.push(`Solar Sales: ${errorMessage}`);
+        console.error('[SolarSales] Error:', errorMessage);
       }
     }
 
