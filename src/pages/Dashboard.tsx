@@ -317,6 +317,19 @@ const Dashboard = () => {
             }))
             .sort((a, b) => b.totalVendas - a.totalVendas);
 
+          // Debug logs temporários para diagnosticar problema do gráfico
+          console.log('=== ADMIN DATA DEBUG ===');
+          console.log('totalClients:', totalClients);
+          console.log('activatedClients:', activatedClients);
+          console.log('notActivatedCount:', notActivatedCount);
+          console.log('Soma Ativação:', activatedClients + notActivatedCount);
+          console.log('solarSalesClients:', solarSalesClients);
+          console.log('nonSolarSalesClients:', nonSolarSalesClients);
+          console.log('Soma Solar:', solarSalesClients + nonSolarSalesClients);
+          console.log('partners30kPlusCount:', partners30kPlusCount);
+          console.log('partnersBelow30kCount:', partnersBelow30kCount);
+          console.log('Soma Parceiros:', partners30kPlusCount + partnersBelow30kCount);
+
           setActivationData({
             totalClients,
             activatedClients,
@@ -571,7 +584,8 @@ const Dashboard = () => {
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC' // Força UTC para evitar conversão de timezone
     }).format(date);
   };
 
