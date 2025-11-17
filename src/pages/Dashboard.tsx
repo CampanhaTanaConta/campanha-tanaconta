@@ -268,6 +268,22 @@ const Dashboard = () => {
           const solarSalesClients = clientsWithSolarSales.size;
           const nonSolarSalesClients = totalClients - solarSalesClients;
 
+          // Debug logs para diagnosticar problema do gráfico
+          console.log('=== CÁLCULOS DE VALORES PARA O GRÁFICO ===');
+          console.log('totalClients:', totalClients);
+          console.log('---');
+          console.log('activatedClients:', activatedClients);
+          console.log('notActivatedCount (deve ser', totalClients - activatedClients, '):', notActivatedCount);
+          console.log('Soma Ativação:', activatedClients + notActivatedCount, '(deve ser', totalClients, ')');
+          console.log('---');
+          console.log('solarSalesClients:', solarSalesClients);
+          console.log('nonSolarSalesClients (deve ser', totalClients - solarSalesClients, '):', nonSolarSalesClients);
+          console.log('Soma Solar:', solarSalesClients + nonSolarSalesClients, '(deve ser', totalClients, ')');
+          console.log('---');
+          console.log('partners30kPlusCount:', partners30kPlusCount);
+          console.log('partnersBelow30kCount (deve ser', totalClients - partners30kPlusCount, '):', partnersBelow30kCount);
+          console.log('Soma Parceiros:', partners30kPlusCount + partnersBelow30kCount, '(deve ser', totalClients, ')');
+
           // Calcular vendas de Energia Solar por revenda
           const solarSalesByClient = transactions?.reduce((acc, t) => {
             if (t.tipo_venda === 'Energia Solar') {
@@ -316,19 +332,6 @@ const Dashboard = () => {
               totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
             }))
             .sort((a, b) => b.totalVendas - a.totalVendas);
-
-          // Debug logs temporários para diagnosticar problema do gráfico
-          console.log('=== ADMIN DATA DEBUG ===');
-          console.log('totalClients:', totalClients);
-          console.log('activatedClients:', activatedClients);
-          console.log('notActivatedCount:', notActivatedCount);
-          console.log('Soma Ativação:', activatedClients + notActivatedCount);
-          console.log('solarSalesClients:', solarSalesClients);
-          console.log('nonSolarSalesClients:', nonSolarSalesClients);
-          console.log('Soma Solar:', solarSalesClients + nonSolarSalesClients);
-          console.log('partners30kPlusCount:', partners30kPlusCount);
-          console.log('partnersBelow30kCount:', partnersBelow30kCount);
-          console.log('Soma Parceiros:', partners30kPlusCount + partnersBelow30kCount);
 
           setActivationData({
             totalClients,

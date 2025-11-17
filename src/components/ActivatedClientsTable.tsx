@@ -72,9 +72,9 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                 <TableRow>
                   <TableHead>Revenda</TableHead>
                   <TableHead>Clique, faça contato e aumente seu prêmio</TableHead>
-                  <TableHead className="text-right">Out/24</TableHead>
-                  <TableHead className="text-right">Nov/24</TableHead>
-                  <TableHead className="text-right">Dez/24</TableHead>
+                  <TableHead className="text-right">Out/25</TableHead>
+                  <TableHead className="text-right">Nov/25</TableHead>
+                  <TableHead className="text-right">Dez/25</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Energia Solar</TableHead>
                 </TableRow>
