@@ -108,6 +108,29 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [participante, navigate]);
 
+  // Função auxiliar para calcular potencial de vendas
+  const calcularPotencialVendas = (
+    salesByClientAndMonth: Record<string, { outubro: number; novembro: number; dezembro: number }>,
+    allClientIds: string[]
+  ): number => {
+    let potencialTotal = 0;
+    
+    allClientIds.forEach(clientId => {
+      const clientSales = salesByClientAndMonth[clientId] || { outubro: 0, novembro: 0, dezembro: 0 };
+      
+      // Outubro (metade do mês): R$ 15.000 ou valor real se > R$ 15.000
+      potencialTotal += Math.max(15000, clientSales.outubro);
+      
+      // Novembro: R$ 30.000 ou valor real se > R$ 30.000
+      potencialTotal += Math.max(30000, clientSales.novembro);
+      
+      // Dezembro: R$ 30.000 ou valor real se > R$ 30.000
+      potencialTotal += Math.max(30000, clientSales.dezembro);
+    });
+    
+    return potencialTotal;
+  };
+
   const fetchDashboardData = async () => {
     try {
       // Get user email from auth context - required for RLS
@@ -177,6 +200,27 @@ const Dashboard = () => {
           });
         }
 
+        // Calculate monthly sales for each client (needed for potential calculation)
+        const salesByClientAndMonth = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          const date = new Date(t.data_transacao);
+          const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          
+          if (!acc[clientId]) {
+            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+          }
+          
+          const value = Number(t.total_parcela);
+          if (month === 9) acc[clientId].outubro += value; // October
+          if (month === 10) acc[clientId].novembro += value; // November
+          if (month === 11) acc[clientId].dezembro += value; // December
+          
+          return acc;
+        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+
+        // Get all unique client IDs
+        const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
+
         // Calculate KPIs from ALL transactions
         if (transactions && transactions.length > 0) {
           const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
@@ -188,16 +232,16 @@ const Dashboard = () => {
           const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
           
           let premiacaoEstimada = premiacaoAtual;
-          let vendasEstimadas = vendas;
           
           if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
-            const taxaDiariaVendas = vendas / diasDecorridos;
-            vendasEstimadas = taxaDiariaVendas * diasTotais;
           }
+
+          // Calcular potencial de vendas baseado em R$30k por revenda por mês
+          const vendasEstimadas = calcularPotencialVendas(salesByClientAndMonth, allClientIds);
 
           setKpis({
             vendas,
@@ -359,6 +403,27 @@ const Dashboard = () => {
           return;
         }
 
+        // Calculate monthly sales for each client (needed for potential calculation)
+        const salesByClientAndMonth = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          const date = new Date(t.data_transacao);
+          const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          
+          if (!acc[clientId]) {
+            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+          }
+          
+          const value = Number(t.total_parcela);
+          if (month === 9) acc[clientId].outubro += value; // October
+          if (month === 10) acc[clientId].novembro += value; // November
+          if (month === 11) acc[clientId].dezembro += value; // December
+          
+          return acc;
+        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+
+        // Get all unique client IDs from participant's wallet
+        const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
+
         // Calculate KPIs
         if (transactions && transactions.length > 0) {
           const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
@@ -370,16 +435,16 @@ const Dashboard = () => {
           const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
           
           let premiacaoEstimada = premiacaoAtual;
-          let vendasEstimadas = vendas;
 
           if (currentLastUpdateDate && currentLastUpdateDate < endDate && currentLastUpdateDate >= startDate) {
             const diasDecorridos = Math.max(1, Math.floor((currentLastUpdateDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
             const diasTotais = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
             const taxaDiaria = premiacaoAtual / diasDecorridos;
             premiacaoEstimada = taxaDiaria * diasTotais;
-            const taxaDiariaVendas = vendas / diasDecorridos;
-            vendasEstimadas = taxaDiariaVendas * diasTotais;
           }
+
+          // Calcular potencial de vendas baseado em R$30k por revenda por mês
+          const vendasEstimadas = calcularPotencialVendas(salesByClientAndMonth, allClientIds);
 
           setKpis({
             vendas,
@@ -641,12 +706,12 @@ const Dashboard = () => {
 
           <Card className="border-accent/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Projeção de vendas</CardTitle>
+              <CardTitle className="text-sm font-medium">Potencial de Vendas</CardTitle>
               <TrendingUp className="h-5 w-5 text-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-accent">{formatCurrency(kpis.vendasEstimadas)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
+              <p className="text-xs text-muted-foreground mt-1">Potencial R$30k x revenda x mês</p>
             </CardContent>
           </Card>
 
