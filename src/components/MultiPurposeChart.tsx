@@ -18,19 +18,32 @@ export const MultiPurposeChart = ({
   partners30kPlusCount,
   partnersBelow30kCount
 }: MultiPurposeChartProps) => {
+  // Cada categoria deve ter apenas suas próprias barras, não todas
   const chartData = [
     {
       categoria: 'Ativação',
       'Ativados': activatedCount,
       'Não Ativados': notActivatedCount,
+      'Com Solar': 0,  // Não exibir para esta categoria
+      'Sem Solar': 0,  // Não exibir para esta categoria
+      '≥ R$30k': 0,    // Não exibir para esta categoria
+      '< R$30k': 0,    // Não exibir para esta categoria
     },
     {
       categoria: 'Energia Solar',
+      'Ativados': 0,   // Não exibir para esta categoria
+      'Não Ativados': 0, // Não exibir para esta categoria
       'Com Solar': solarClientsCount,
       'Sem Solar': nonSolarClientsCount,
+      '≥ R$30k': 0,    // Não exibir para esta categoria
+      '< R$30k': 0,    // Não exibir para esta categoria
     },
     {
       categoria: 'Parceiros R$30k+',
+      'Ativados': 0,   // Não exibir para esta categoria
+      'Não Ativados': 0, // Não exibir para esta categoria
+      'Com Solar': 0,  // Não exibir para esta categoria
+      'Sem Solar': 0,  // Não exibir para esta categoria
       '≥ R$30k': partners30kPlusCount,
       '< R$30k': partnersBelow30kCount,
     }
@@ -48,7 +61,8 @@ export const MultiPurposeChart = ({
 
   const renderCustomLabel = (props: any) => {
     const { x, y, width, height, value, fill } = props;
-    if (height < 15) return null;
+    // Não renderizar label para valores zero (categorias não relevantes)
+    if (value === 0 || height < 15) return null;
     
     const labelColor = fill === 'hsl(var(--success))' ? 'white' : '#4B5563';
     
@@ -135,42 +149,42 @@ export const MultiPurposeChart = ({
             />
             <Bar 
               dataKey="Ativados" 
-              stackId="a"
+              stackId="stack"
               fill={colorMap['Ativados']}
-              radius={[8, 8, 0, 0]}
+              radius={[0, 0, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Não Ativados" 
-              stackId="a"
+              stackId="stack"
               fill={colorMap['Não Ativados']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Com Solar" 
-              stackId="b"
+              stackId="stack"
               fill={colorMap['Com Solar']}
-              radius={[8, 8, 0, 0]}
+              radius={[0, 0, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="Sem Solar" 
-              stackId="b"
+              stackId="stack"
               fill={colorMap['Sem Solar']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="≥ R$30k" 
-              stackId="c"
+              stackId="stack"
               fill={colorMap['≥ R$30k']}
-              radius={[8, 8, 0, 0]}
+              radius={[0, 0, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
               dataKey="< R$30k" 
-              stackId="c"
+              stackId="stack"
               fill={colorMap['< R$30k']}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
