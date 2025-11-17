@@ -18,53 +18,44 @@ export const MultiPurposeChart = ({
   partners30kPlusCount,
   partnersBelow30kCount
 }: MultiPurposeChartProps) => {
-  // Cada categoria deve ter apenas suas próprias barras, não todas
+  // Criar dados com chaves únicas para cada categoria para evitar empilhamento cruzado
   const chartData = [
     {
       categoria: 'Ativação',
-      'Ativados': activatedCount,
-      'Não Ativados': notActivatedCount,
-      'Com Solar': 0,  // Não exibir para esta categoria
-      'Sem Solar': 0,  // Não exibir para esta categoria
-      '≥ R$30k': 0,    // Não exibir para esta categoria
-      '< R$30k': 0,    // Não exibir para esta categoria
+      positivo: activatedCount,        // 16
+      negativo: notActivatedCount,      // 50
+      tipo: 'ativacao'
     },
     {
       categoria: 'Energia Solar',
-      'Ativados': 0,   // Não exibir para esta categoria
-      'Não Ativados': 0, // Não exibir para esta categoria
-      'Com Solar': solarClientsCount,
-      'Sem Solar': nonSolarClientsCount,
-      '≥ R$30k': 0,    // Não exibir para esta categoria
-      '< R$30k': 0,    // Não exibir para esta categoria
+      positivo: solarClientsCount,      // 2
+      negativo: nonSolarClientsCount,   // 64
+      tipo: 'solar'
     },
     {
       categoria: 'Parceiros R$30k+',
-      'Ativados': 0,   // Não exibir para esta categoria
-      'Não Ativados': 0, // Não exibir para esta categoria
-      'Com Solar': 0,  // Não exibir para esta categoria
-      'Sem Solar': 0,  // Não exibir para esta categoria
-      '≥ R$30k': partners30kPlusCount,
-      '< R$30k': partnersBelow30kCount,
+      positivo: partners30kPlusCount,   // 2
+      negativo: partnersBelow30kCount,  // 64
+      tipo: 'parceiros'
     }
   ];
 
-  // Map de cores para cada categoria
-  const colorMap: Record<string, string> = {
-    'Ativados': 'hsl(var(--success))',
-    'Com Solar': 'hsl(var(--success))',
-    '≥ R$30k': 'hsl(var(--success))',
-    'Não Ativados': 'hsl(var(--muted))',
-    'Sem Solar': 'hsl(var(--muted))',
-    '< R$30k': 'hsl(var(--muted))',
+  // Labels descritivos para cada categoria
+  const labelMap: Record<string, { positivo: string; negativo: string }> = {
+    'ativacao': { positivo: 'Ativados', negativo: 'Não Ativados' },
+    'solar': { positivo: 'Com Solar', negativo: 'Sem Solar' },
+    'parceiros': { positivo: '≥ R$30k', negativo: '< R$30k' }
   };
+
+  // Map de cores (simplificado - agora apenas positivo e negativo)
+  const colorPositivo = 'hsl(var(--success))';
+  const colorNegativo = 'hsl(var(--muted))';
 
   const renderCustomLabel = (props: any) => {
     const { x, y, width, height, value, fill } = props;
-    // Não renderizar label para valores zero (categorias não relevantes)
-    if (value === 0 || height < 15) return null;
+    if (!value || value === 0 || height < 15) return null;
     
-    const labelColor = fill === 'hsl(var(--success))' ? 'white' : '#4B5563';
+    const labelColor = fill === colorPositivo ? 'white' : '#4B5563';
     
     return (
       <text 
@@ -82,23 +73,16 @@ export const MultiPurposeChart = ({
   };
 
   const renderLegend = (props: any) => {
-    const { payload } = props;
     return (
       <div className="flex justify-center gap-6 mb-4">
-        {payload.map((entry: any, index: number) => {
-          const isPositive = entry.value === 'Ativados' || entry.value === 'Com Solar' || entry.value === '≥ R$30k';
-          const bgColor = isPositive ? 'bg-success' : 'bg-muted';
-          const textColor = isPositive ? 'text-white' : 'text-muted-foreground';
-          
-          return (
-            <div key={`legend-${index}`} className="flex items-center gap-2">
-              <div className={`w-4 h-4 rounded ${bgColor}`} />
-              <span className={`text-sm font-medium ${textColor}`}>
-                {entry.value}
-              </span>
-            </div>
-          );
-        })}
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-success" />
+          <span className="text-sm font-medium text-white">Positivo</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-muted" />
+          <span className="text-sm font-medium text-muted-foreground">Negativo</span>
+        </div>
       </div>
     );
   };
@@ -126,18 +110,20 @@ export const MultiPurposeChart = ({
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const total = payload.reduce((sum, entry) => sum + (entry.value as number), 0);
+                  const data = payload[0].payload;
+                  const tipo = data.tipo;
+                  const labels = labelMap[tipo];
+                  const total = data.positivo + data.negativo;
+                  
                   return (
                     <div className="bg-background border rounded-lg p-3 shadow-lg">
-                      <p className="font-semibold mb-2">{payload[0].payload.categoria}</p>
-                      {payload.map((entry, index) => {
-                        const isPositive = entry.name === 'Ativados' || entry.name === 'Com Solar' || entry.name === '≥ R$30k';
-                        return (
-                          <p key={index} className={`text-sm ${isPositive ? 'text-success' : 'text-muted-foreground'}`}>
-                            {entry.name}: <span className="font-semibold">{entry.value}</span>
-                          </p>
-                        );
-                      })}
+                      <p className="font-semibold mb-2">{data.categoria}</p>
+                      <p className="text-sm text-success">
+                        {labels.positivo}: <span className="font-semibold">{data.positivo}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {labels.negativo}: <span className="font-semibold">{data.negativo}</span>
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1 pt-1 border-t">
                         Total: {total}
                       </p>
@@ -148,44 +134,16 @@ export const MultiPurposeChart = ({
               }}
             />
             <Bar 
-              dataKey="Ativados" 
+              dataKey="positivo" 
               stackId="stack"
-              fill={colorMap['Ativados']}
+              fill={colorPositivo}
               radius={[0, 0, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
-              dataKey="Não Ativados" 
+              dataKey="negativo" 
               stackId="stack"
-              fill={colorMap['Não Ativados']}
-              radius={[8, 8, 0, 0]}
-              label={renderCustomLabel}
-            />
-            <Bar 
-              dataKey="Com Solar" 
-              stackId="stack"
-              fill={colorMap['Com Solar']}
-              radius={[0, 0, 0, 0]}
-              label={renderCustomLabel}
-            />
-            <Bar 
-              dataKey="Sem Solar" 
-              stackId="stack"
-              fill={colorMap['Sem Solar']}
-              radius={[8, 8, 0, 0]}
-              label={renderCustomLabel}
-            />
-            <Bar 
-              dataKey="≥ R$30k" 
-              stackId="stack"
-              fill={colorMap['≥ R$30k']}
-              radius={[0, 0, 0, 0]}
-              label={renderCustomLabel}
-            />
-            <Bar 
-              dataKey="< R$30k" 
-              stackId="stack"
-              fill={colorMap['< R$30k']}
+              fill={colorNegativo}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
