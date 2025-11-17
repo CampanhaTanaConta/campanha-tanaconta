@@ -77,20 +77,6 @@ export const MultiPurposeChart = ({
     );
   };
 
-  const renderLegend = (props: any) => {
-    return (
-      <div className="flex justify-center gap-6 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-success" />
-          <span className="text-sm font-medium text-white">Positivo</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-muted" />
-          <span className="text-sm font-medium text-muted-foreground">Negativo</span>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <Card>
@@ -102,16 +88,11 @@ export const MultiPurposeChart = ({
         <ResponsiveContainer width="100%" height={350}>
           <BarChart 
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="categoria" />
             <YAxis />
-            <Legend 
-              content={renderLegend}
-              verticalAlign="bottom"
-              height={80}
-            />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
