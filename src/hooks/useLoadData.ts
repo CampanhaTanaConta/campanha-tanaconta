@@ -7,10 +7,12 @@ interface LoadDataRequest {
   walletUrl?: string;
   transactionsUrl?: string;
   departmentStoreUrl?: string;
+  solarSalesUrl?: string;
   participantsContent?: string;
   walletContent?: string;
   transactionsContent?: string;
   departmentStoreContent?: string;
+  solarSalesContent?: string;
 }
 
 interface LoadDataResponse {
@@ -18,6 +20,7 @@ interface LoadDataResponse {
   wallet: number;
   transactions: number;
   departmentStore: number;
+  solarSales: number;
   errors: string[];
   stats: {
     walletIds: number;
@@ -64,7 +67,7 @@ export const useLoadData = () => {
       
       toast({
         title: "Dados carregados com sucesso!",
-        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.departmentStore} estabelecimentos${statsMessage}`,
+        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.solarSales} vendas solares, ${data.departmentStore} estabelecimentos${statsMessage}`,
       });
 
       return data;

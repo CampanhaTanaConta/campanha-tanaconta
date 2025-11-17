@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLoadData } from '@/hooks/useLoadData';
-import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut, UserPlus } from 'lucide-react';
+import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut, UserPlus, Sun } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,6 +21,7 @@ const Admin = () => {
   const [walletUrl, setWalletUrl] = useState('');
   const [transactionsUrl, setTransactionsUrl] = useState('');
   const [departmentStoreUrl, setDepartmentStoreUrl] = useState('');
+  const [solarSalesUrl, setSolarSalesUrl] = useState('');
   
   // Admin creation states
   const [newAdminName, setNewAdminName] = useState('');
@@ -32,7 +33,7 @@ const Admin = () => {
   interface UploadedFile {
     file: File;
     blobUrl: string;
-    type: 'participants' | 'wallet' | 'transactions' | 'departmentStore' | null;
+    type: 'participants' | 'wallet' | 'transactions' | 'departmentStore' | 'solarSales' | null;
     autoDetected: boolean;
   }
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -60,6 +61,7 @@ const Admin = () => {
         setWalletUrl(urls.walletUrl || '');
         setTransactionsUrl(urls.transactionsUrl || '');
         setDepartmentStoreUrl(urls.departmentStoreUrl || '');
+        setSolarSalesUrl(urls.solarSalesUrl || '');
       } catch (e) {
         console.error('Error loading saved URLs:', e);
       }
@@ -67,13 +69,14 @@ const Admin = () => {
   }, [participante, isAdmin, navigate]);
 
   // Função para identificar tipo de arquivo pelo nome
-  const identifyFileType = (fileName: string): 'participants' | 'wallet' | 'transactions' | 'departmentStore' | null => {
+  const identifyFileType = (fileName: string): 'participants' | 'wallet' | 'transactions' | 'departmentStore' | 'solarSales' | null => {
     const nameLower = fileName.toLowerCase();
     
     if (nameLower.includes('participante')) return 'participants';
     if (nameLower.includes('carteira') || nameLower.includes('wallet')) return 'wallet';
     if (nameLower.includes('transac')) return 'transactions';
     if (nameLower.includes('estabelecimento') || nameLower.includes('loja') || nameLower.includes('department')) return 'departmentStore';
+    if (nameLower.includes('solar') || nameLower.includes('split')) return 'solarSales';
     
     return null;
   };
@@ -84,6 +87,7 @@ const Admin = () => {
       case 'wallet': return 'Carteira';
       case 'transactions': return 'Transações';
       case 'departmentStore': return 'Estabelecimentos';
+      case 'solarSales': return 'Vendas Solar';
       default: return 'Não identificado';
     }
   };
@@ -94,6 +98,7 @@ const Admin = () => {
       case 'wallet': return 'bg-green-500';
       case 'transactions': return 'bg-yellow-500';
       case 'departmentStore': return 'bg-purple-500';
+      case 'solarSales': return 'bg-orange-500';
       default: return 'bg-gray-400';
     }
   };
@@ -230,6 +235,7 @@ const Admin = () => {
       walletUrl,
       transactionsUrl,
       departmentStoreUrl,
+      solarSalesUrl,
     }));
 
     // Construir payload com conteúdo dos arquivos ou URLs
@@ -243,6 +249,7 @@ const Admin = () => {
         if (uf.type === 'wallet') payload.walletContent = content;
         if (uf.type === 'transactions') payload.transactionsContent = content;
         if (uf.type === 'departmentStore') payload.departmentStoreContent = content;
+        if (uf.type === 'solarSales') payload.solarSalesContent = content;
       } catch (error) {
         toast({
           title: "Erro ao ler arquivo",
@@ -258,6 +265,7 @@ const Admin = () => {
     if (walletUrl && !payload.walletContent) payload.walletUrl = walletUrl;
     if (transactionsUrl && !payload.transactionsContent) payload.transactionsUrl = transactionsUrl;
     if (departmentStoreUrl && !payload.departmentStoreContent) payload.departmentStoreUrl = departmentStoreUrl;
+    if (solarSalesUrl && !payload.solarSalesContent) payload.solarSalesUrl = solarSalesUrl;
 
     // Verificar se há pelo menos uma fonte de dados
     if (Object.keys(payload).length === 0) {
@@ -503,6 +511,7 @@ const Admin = () => {
                               <option value="wallet">Carteira</option>
                               <option value="transactions">Transações</option>
                               <option value="departmentStore">Estabelecimentos</option>
+                              <option value="solarSales">Vendas Solar</option>
                             </select>
                           </div>
                         ) : (
@@ -517,6 +526,7 @@ const Admin = () => {
                             <option value="wallet">Carteira</option>
                             <option value="transactions">Transações</option>
                             <option value="departmentStore">Estabelecimentos</option>
+                            <option value="solarSales">Vendas Solar</option>
                           </select>
                         )}
                         <Button
@@ -576,6 +586,21 @@ const Admin = () => {
                             placeholder="URL da planilha de estabelecimentos"
                             disabled={isLoading}
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                            <Sun className="h-4 w-4 text-orange-500" />
+                            Vendas de Energia Solar
+                          </label>
+                          <Input
+                            value={solarSalesUrl}
+                            onChange={(e) => setSolarSalesUrl(e.target.value)}
+                            placeholder="URL da planilha de vendas solares (opcional)"
+                            disabled={isLoading}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Opcional: Planilha específica para vendas de Energia Solar
+                          </p>
                         </div>
                       </div>
                     </AccordionContent>
