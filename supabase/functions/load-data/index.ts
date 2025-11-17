@@ -295,20 +295,29 @@ Deno.serve(async (req) => {
             // Parse total parcela
             const totalParcelaNum = parseBrazilianNumber(totalParcelaStr);
 
-            // Normalize percentage (handle 10, 10%, 0.10%, 0,10%)
-            const hasPercent = premiacaoPctStr.includes('%');
-            const premiacaoPctCleaned = premiacaoPctStr.replace('%', '').replace(',', '.');
-            let premiacaoPctNorm = parseFloat(premiacaoPctCleaned) || 0;
-            
-            // If the original had a % sign, the number is already a percentage, so divide by 100
-            // If not, and the number is > 1, assume it's an integer percentage (e.g., "10" means 10%)
-            if (hasPercent) {
-              premiacaoPctNorm = premiacaoPctNorm / 100;
-            } else if (premiacaoPctNorm > 1) {
-              premiacaoPctNorm = premiacaoPctNorm / 100;
-            }
+            // Determine premium percentage
+            let premiacaoPctNorm: number;
+            let premiacaoValor: number;
 
-            const premiacaoValor = totalParcelaNum * premiacaoPctNorm;
+            // If no premium column exists or value is '0', use default 0.1%
+            if (idxPremiacaoPct === -1 || !premiacaoPctStr || premiacaoPctStr === '0') {
+              premiacaoPctNorm = 0.001; // 0.1% default for Transactions file
+              premiacaoValor = totalParcelaNum * premiacaoPctNorm;
+              console.log(`[Transactions] Using default 0.1% premium`);
+            } else {
+              // Parse premium column if it exists (handle 10, 10%, 0.10%, 0,10%)
+              const hasPercent = premiacaoPctStr.includes('%');
+              const premiacaoPctCleaned = premiacaoPctStr.replace('%', '').replace(',', '.');
+              premiacaoPctNorm = parseFloat(premiacaoPctCleaned) || 0.001;
+              
+              if (hasPercent) {
+                premiacaoPctNorm = premiacaoPctNorm / 100;
+              } else if (premiacaoPctNorm > 1) {
+                premiacaoPctNorm = premiacaoPctNorm / 100;
+              }
+              
+              premiacaoValor = totalParcelaNum * premiacaoPctNorm;
+            }
 
             const { error } = await supabaseClient.from('transactions').insert({
               cliente_id: clienteId,
@@ -539,7 +548,7 @@ Deno.serve(async (req) => {
                 data_transacao: parsedDate,
                 tipo_venda: 'Energia Solar',
                 total_parcela: valor,
-                premiacao_pct_norm: premiacaoPct,
+                premiacao_pct_norm: 0.002, // 0.2% normalized
                 premiacao_valor: premiacaoValor,
                 estab_comercial: revenda || null,
               });
@@ -556,6 +565,47 @@ Deno.serve(async (req) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
         results.errors.push(`Solar Sales: ${errorMessage}`);
         console.error('[SolarSales] Error:', errorMessage);
+      }
+    }
+
+    // Update existing Solar Energy transactions when solar file is uploaded
+    if (solarSalesContent || solarSalesUrl) {
+      try {
+        console.log('[SolarSales] Updating existing Energia Solar transactions to 0.2%...');
+        
+        // Get all existing Energia Solar transactions
+        const { data: existingSolar, error: selectError } = await supabaseClient
+          .from('transactions')
+          .select('id, total_parcela, premiacao_pct_norm, premiacao_valor')
+          .eq('tipo_venda', 'Energia Solar');
+        
+        if (selectError) {
+          console.error('[SolarSales] Error fetching existing solar transactions:', selectError);
+        } else if (existingSolar && existingSolar.length > 0) {
+          console.log(`[SolarSales] Found ${existingSolar.length} existing solar transactions to update`);
+          
+          // Update each transaction with correct 0.2% reward
+          for (const tx of existingSolar) {
+            const newPremiacaoPctNorm = 0.002; // 0.2%
+            const newPremiacaoValor = tx.total_parcela * newPremiacaoPctNorm;
+            
+            const { error: updateError } = await supabaseClient
+              .from('transactions')
+              .update({
+                premiacao_pct_norm: newPremiacaoPctNorm,
+                premiacao_valor: newPremiacaoValor
+              })
+              .eq('id', tx.id);
+            
+            if (updateError) {
+              console.error(`[SolarSales] Error updating transaction ${tx.id}:`, updateError);
+            }
+          }
+          
+          console.log('[SolarSales] Finished updating existing solar transactions');
+        }
+      } catch (error) {
+        console.error('[SolarSales] Error updating existing solar transactions:', error);
       }
     }
 
