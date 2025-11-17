@@ -531,7 +531,7 @@ Deno.serve(async (req) => {
               
               // Fixed reward: 0.2% for Solar Energy sales
               const premiacaoPct = 0.2;
-              const premiacaoValor = valor * 0.20;
+              const premiacaoValor = valor * 0.002;
 
               // Insert transaction as "Energia Solar"
               const { error } = await supabaseClient.from('transactions').insert({
