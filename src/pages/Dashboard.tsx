@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart } from 'lucide-react';
+import { LogOut, TrendingUp, DollarSign, Users, ShoppingCart, CheckCircle, AlertCircle, Target } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { ActivationStats } from '@/components/ActivationStats';
 import { PendingClientsTable } from '@/components/PendingClientsTable';
 import { MultiPurposeChart } from '@/components/MultiPurposeChart';
@@ -741,25 +742,75 @@ const Dashboard = () => {
 
           <Card className="border-success/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Premiação Atual</CardTitle>
+              <CardTitle className="text-sm font-medium">Premiação a receber</CardTitle>
               <TrendingUp className="h-5 w-5 text-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-success">{formatCurrency(kpis.premiacaoAtual)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Valor acumulado até hoje</p>
+              <p className="text-xs text-muted-foreground mt-1">Valor a ser recebido</p>
             </CardContent>
           </Card>
 
-          <Card className="border-warning/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Premiação Estimada</CardTitle>
-              <TrendingUp className="h-5 w-5 text-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-warning">{formatCurrency(kpis.premiacaoEstimada)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Projeção até 31/12/2025</p>
-            </CardContent>
-          </Card>
+          {!isAdmin ? (
+            <Card className={`${kpis.vendas >= 50000 ? 'border-success/20' : 'border-destructive/20'} shadow-lg hover:shadow-xl transition-shadow`}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Atingimento Mínimo</CardTitle>
+                {kpis.vendas >= 50000 ? (
+                  <CheckCircle className="h-5 w-5 text-success" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                )}
+              </CardHeader>
+              <CardContent>
+                {kpis.vendas >= 50000 ? (
+                  <>
+                    <div className="text-3xl font-bold text-success">✓ Valor Atingido</div>
+                    <p className="text-xs text-muted-foreground mt-1">Requisito de R$50.000 alcançado</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-3xl font-bold text-destructive">
+                      Falta {formatCurrency(50000 - kpis.vendas)}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Para mínimo de R$50.000</p>
+                    <Progress 
+                      value={Math.min((kpis.vendas / 50000) * 100, 100)} 
+                      className="mt-2 h-2" 
+                    />
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            (() => {
+              const participantesComValor = adminParticipantsData.filter(p => p.vendas_totais >= 50000).length;
+              const totalParticipantes = adminParticipantsData.length;
+              const percentualValor = totalParticipantes > 0 
+                ? ((participantesComValor / totalParticipantes) * 100).toFixed(1)
+                : '0';
+              
+              return (
+                <Card className="border-foreground/20 shadow-lg hover:shadow-xl transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Atingimento Mínimo</CardTitle>
+                    <Target className="h-5 w-5 text-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">
+                      {participantesComValor} de {totalParticipantes}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {percentualValor}% alcançaram R$50.000
+                    </p>
+                    <Progress 
+                      value={totalParticipantes > 0 ? (participantesComValor / totalParticipantes) * 100 : 0} 
+                      className="mt-2 h-2" 
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })()
+          )}
         </div>
 
         {activationData.totalClients > 0 && (
