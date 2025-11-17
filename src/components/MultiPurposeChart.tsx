@@ -134,16 +134,16 @@ export const MultiPurposeChart = ({
               }}
             />
             <Bar 
-              dataKey="positivo" 
+              dataKey="negativo" 
               stackId="stack"
-              fill={colorPositivo}
+              fill={colorNegativo}
               radius={[0, 0, 0, 0]}
               label={renderCustomLabel}
             />
             <Bar 
-              dataKey="negativo" 
+              dataKey="positivo" 
               stackId="stack"
-              fill={colorNegativo}
+              fill={colorPositivo}
               radius={[8, 8, 0, 0]}
               label={renderCustomLabel}
             />
