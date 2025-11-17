@@ -244,6 +244,7 @@ export type Database = {
         Args: { p_email: string; p_participante: string }
         Returns: Json
       }
+      get_last_upload_date: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
