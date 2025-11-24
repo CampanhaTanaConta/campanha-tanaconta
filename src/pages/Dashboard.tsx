@@ -111,7 +111,7 @@ const Dashboard = () => {
 
   // Função auxiliar para calcular potencial de vendas
   const calcularPotencialVendas = (
-    salesByClientAndMonth: Record<string, { outubro: number; novembro: number; dezembro: number }>,
+    salesByClientAndMonth: Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>,
     allClientIds: string[]
   ): number => {
     let potencialTotal = 0;
@@ -125,9 +125,12 @@ const Dashboard = () => {
     const outubroPassou = (anoAtual === 2025 && mesAtual > 9) || anoAtual > 2025;
     const novembroPassou = (anoAtual === 2025 && mesAtual > 10) || anoAtual > 2025;
     const dezembroPassou = (anoAtual === 2025 && mesAtual > 11) || anoAtual > 2025;
+    const janeiroPassou = anoAtual === 2026 && mesAtual > 0;
+    const fevereiroPassou = anoAtual === 2026 && mesAtual > 1;
+    const marcoPassou = anoAtual === 2026 && mesAtual > 2;
     
     allClientIds.forEach(clientId => {
-      const clientSales = salesByClientAndMonth[clientId] || { outubro: 0, novembro: 0, dezembro: 0 };
+      const clientSales = salesByClientAndMonth[clientId] || { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 };
       
       // Outubro: R$ 15.000 de potencial (metade do mês)
       if (outubroPassou) {
@@ -150,6 +153,27 @@ const Dashboard = () => {
         potencialTotal += clientSales.dezembro;
       } else {
         potencialTotal += Math.max(30000, clientSales.dezembro);
+      }
+      
+      // Janeiro 2026: R$ 30.000 de potencial
+      if (janeiroPassou) {
+        potencialTotal += clientSales.janeiro;
+      } else {
+        potencialTotal += Math.max(30000, clientSales.janeiro);
+      }
+      
+      // Fevereiro 2026: R$ 30.000 de potencial
+      if (fevereiroPassou) {
+        potencialTotal += clientSales.fevereiro;
+      } else {
+        potencialTotal += Math.max(30000, clientSales.fevereiro);
+      }
+      
+      // Março 2026: R$ 30.000 de potencial
+      if (marcoPassou) {
+        potencialTotal += clientSales.marco;
+      } else {
+        potencialTotal += Math.max(30000, clientSales.marco);
       }
     });
     
@@ -230,18 +254,30 @@ const Dashboard = () => {
           const clientId = t.cliente_id;
           const date = new Date(t.data_transacao);
           const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          const year = date.getFullYear();
           
           if (!acc[clientId]) {
-            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 };
           }
           
           const value = Number(t.total_parcela);
-          if (month === 9) acc[clientId].outubro += value; // October
-          if (month === 10) acc[clientId].novembro += value; // November
-          if (month === 11) acc[clientId].dezembro += value; // December
+          
+          // 2025 sales
+          if (year === 2025) {
+            if (month === 9) acc[clientId].outubro += value; // October
+            if (month === 10) acc[clientId].novembro += value; // November
+            if (month === 11) acc[clientId].dezembro += value; // December
+          }
+          
+          // 2026 sales
+          if (year === 2026) {
+            if (month === 0) acc[clientId].janeiro += value; // January
+            if (month === 1) acc[clientId].fevereiro += value; // February
+            if (month === 2) acc[clientId].marco += value; // March
+          }
           
           return acc;
-        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
         // Get all unique client IDs
         const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
@@ -252,9 +288,9 @@ const Dashboard = () => {
           const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
-          // Calculate estimated award projection until 31/12/2025
+          // Calculate estimated award projection until 31/03/2026
           const startDate = new Date(Date.UTC(2025, 9, 15)); // 15/10/2025 em UTC (mês 9 = outubro)
-          const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
+          const endDate = new Date(Date.UTC(2026, 2, 31, 23, 59, 59)); // 31/03/2026 em UTC (mês 2 = março)
           
           let premiacaoEstimada = premiacaoAtual;
           
@@ -314,18 +350,30 @@ const Dashboard = () => {
             const clientId = t.cliente_id;
             const date = new Date(t.data_transacao);
             const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+            const year = date.getFullYear();
             
             if (!acc[clientId]) {
-              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 };
             }
             
             const value = Number(t.total_parcela);
-            if (month === 9) acc[clientId].outubro += value; // October
-            if (month === 10) acc[clientId].novembro += value; // November
-            if (month === 11) acc[clientId].dezembro += value; // December
+            
+            // 2025 sales
+            if (year === 2025) {
+              if (month === 9) acc[clientId].outubro += value; // October
+              if (month === 10) acc[clientId].novembro += value; // November
+              if (month === 11) acc[clientId].dezembro += value; // December
+            }
+            
+            // 2026 sales
+            if (year === 2026) {
+              if (month === 0) acc[clientId].janeiro += value; // January
+              if (month === 1) acc[clientId].fevereiro += value; // February
+              if (month === 2) acc[clientId].marco += value; // March
+            }
             
             return acc;
-          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
           // Calcular quais revendas venderam Energia Solar
           const clientsWithSolarSales = new Set(
@@ -380,7 +428,7 @@ const Dashboard = () => {
               ...client,
               estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
               totalVendas: salesByClient[client.cliente_id] || 0,
-              salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+                salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 },
               hasSolarSales: !!solarSalesByClient[client.cliente_id],
               totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
             }))
@@ -433,18 +481,30 @@ const Dashboard = () => {
           const clientId = t.cliente_id;
           const date = new Date(t.data_transacao);
           const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+          const year = date.getFullYear();
           
           if (!acc[clientId]) {
-            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+            acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 };
           }
           
           const value = Number(t.total_parcela);
-          if (month === 9) acc[clientId].outubro += value; // October
-          if (month === 10) acc[clientId].novembro += value; // November
-          if (month === 11) acc[clientId].dezembro += value; // December
+          
+          // 2025 sales
+          if (year === 2025) {
+            if (month === 9) acc[clientId].outubro += value; // October
+            if (month === 10) acc[clientId].novembro += value; // November
+            if (month === 11) acc[clientId].dezembro += value; // December
+          }
+          
+          // 2026 sales
+          if (year === 2026) {
+            if (month === 0) acc[clientId].janeiro += value; // January
+            if (month === 1) acc[clientId].fevereiro += value; // February
+            if (month === 2) acc[clientId].marco += value; // March
+          }
           
           return acc;
-        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+        }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
         // Get all unique client IDs from participant's wallet
         const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
@@ -455,9 +515,9 @@ const Dashboard = () => {
           const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
-          // Calculate estimated award projection until 31/12/2025
+          // Calculate estimated award projection until 31/03/2026
           const startDate = new Date(Date.UTC(2025, 9, 15)); // 15/10/2025 em UTC (mês 9 = outubro)
-          const endDate = new Date(Date.UTC(2025, 11, 31)); // 31/12/2025 em UTC (mês 11 = dezembro)
+          const endDate = new Date(Date.UTC(2026, 2, 31, 23, 59, 59)); // 31/03/2026 em UTC (mês 2 = março)
           
           let premiacaoEstimada = premiacaoAtual;
 
@@ -517,18 +577,30 @@ const Dashboard = () => {
             const clientId = t.cliente_id;
             const date = new Date(t.data_transacao);
             const month = date.getMonth(); // 0 = Jan, 9 = Oct, 10 = Nov, 11 = Dec
+            const year = date.getFullYear();
             
             if (!acc[clientId]) {
-              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0 };
+              acc[clientId] = { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 };
             }
             
             const value = Number(t.total_parcela);
-            if (month === 9) acc[clientId].outubro += value; // October
-            if (month === 10) acc[clientId].novembro += value; // November
-            if (month === 11) acc[clientId].dezembro += value; // December
+            
+            // 2025 sales
+            if (year === 2025) {
+              if (month === 9) acc[clientId].outubro += value; // October
+              if (month === 10) acc[clientId].novembro += value; // November
+              if (month === 11) acc[clientId].dezembro += value; // December
+            }
+            
+            // 2026 sales
+            if (year === 2026) {
+              if (month === 0) acc[clientId].janeiro += value; // January
+              if (month === 1) acc[clientId].fevereiro += value; // February
+              if (month === 2) acc[clientId].marco += value; // March
+            }
             
             return acc;
-          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number }>) || {};
+          }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
           // Calcular quais revendas venderam Energia Solar
           const clientsWithSolarSales = new Set(
@@ -606,7 +678,7 @@ const Dashboard = () => {
                 ...client,
                 estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
                 totalVendas: salesByClient[client.cliente_id] || 0,
-                salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0 },
+                salesByMonth: salesByClientAndMonth[client.cliente_id] || { outubro: 0, novembro: 0, dezembro: 0, janeiro: 0, fevereiro: 0, marco: 0 },
                 hasSolarSales: !!solarSalesByClient[client.cliente_id],
                 totalSolarSales: solarSalesByClient[client.cliente_id] || 0,
                 compartilhado: walletInfo?.compartilhado,
