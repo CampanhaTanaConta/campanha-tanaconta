@@ -8,6 +8,9 @@ interface MonthlySales {
   outubro: number;
   novembro: number;
   dezembro: number;
+  janeiro: number;
+  fevereiro: number;
+  marco: number;
 }
 
 interface ActivatedClient {
@@ -52,6 +55,20 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
     return `https://wa.me/${formattedPhone}?text=${message}`;
   };
 
+  // Determinar mês/ano atual para colunas dinâmicas
+  const now = new Date();
+  const currentYear = now.getUTCFullYear();
+  const currentMonth = now.getUTCMonth(); // 0-11
+
+  // Definir quais colunas mostrar
+  const isIn2025 = currentYear === 2025;
+  const isIn2026 = currentYear === 2026;
+
+  // Calcular total de 2025 para cada cliente
+  const get2025Total = (sales: MonthlySales) => {
+    return sales.outubro + sales.novembro + sales.dezembro;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -72,9 +89,25 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                 <TableRow>
                   <TableHead>Revenda</TableHead>
                   <TableHead>Clique, faça contato e aumente seu prêmio</TableHead>
-                  <TableHead className="text-right">Out/25</TableHead>
-                  <TableHead className="text-right">Nov/25</TableHead>
-                  <TableHead className="text-right">Dez/25</TableHead>
+                  
+                  {/* COLUNAS DINÂMICAS */}
+                  {isIn2025 && (
+                    <>
+                      <TableHead className="text-right">Out/25</TableHead>
+                      <TableHead className="text-right">Nov/25</TableHead>
+                      <TableHead className="text-right">Dez/25</TableHead>
+                    </>
+                  )}
+                  
+                  {isIn2026 && (
+                    <>
+                      <TableHead className="text-right">2025</TableHead>
+                      <TableHead className="text-right">Jan/26</TableHead>
+                      {currentMonth >= 1 && <TableHead className="text-right">Fev/26</TableHead>}
+                      {currentMonth >= 2 && <TableHead className="text-right">Mar/26</TableHead>}
+                    </>
+                  )}
+                  
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Energia Solar</TableHead>
                 </TableRow>
@@ -118,15 +151,43 @@ export const ActivatedClientsTable = ({ clients }: ActivatedClientsTableProps) =
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-medium">{formatCurrency(client.salesByMonth.outubro)}</span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-medium">{formatCurrency(client.salesByMonth.novembro)}</span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="font-medium">{formatCurrency(client.salesByMonth.dezembro)}</span>
-                    </TableCell>
+                    
+                    {/* CÉLULAS DINÂMICAS */}
+                    {isIn2025 && (
+                      <>
+                        <TableCell className="text-right">
+                          <span className="font-medium">{formatCurrency(client.salesByMonth.outubro)}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-medium">{formatCurrency(client.salesByMonth.novembro)}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-medium">{formatCurrency(client.salesByMonth.dezembro)}</span>
+                        </TableCell>
+                      </>
+                    )}
+
+                    {isIn2026 && (
+                      <>
+                        <TableCell className="text-right">
+                          <span className="font-medium">{formatCurrency(get2025Total(client.salesByMonth))}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-medium">{formatCurrency(client.salesByMonth.janeiro)}</span>
+                        </TableCell>
+                        {currentMonth >= 1 && (
+                          <TableCell className="text-right">
+                            <span className="font-medium">{formatCurrency(client.salesByMonth.fevereiro)}</span>
+                          </TableCell>
+                        )}
+                        {currentMonth >= 2 && (
+                          <TableCell className="text-right">
+                            <span className="font-medium">{formatCurrency(client.salesByMonth.marco)}</span>
+                          </TableCell>
+                        )}
+                      </>
+                    )}
+                    
                     <TableCell className="text-right">
                       <span className="font-bold text-primary">{formatCurrency(client.totalVendas)}</span>
                     </TableCell>
