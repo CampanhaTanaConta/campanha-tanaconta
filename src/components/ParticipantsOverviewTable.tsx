@@ -32,11 +32,11 @@ export const ParticipantsOverviewTable = ({ data }: ParticipantsOverviewTablePro
 
   const getPerformanceBadge = (taxaAtivacao: number) => {
     if (taxaAtivacao >= 70) {
-      return <Badge className="bg-success text-success-foreground">🟢 Excelente</Badge>;
-    } else if (taxaAtivacao >= 40) {
-      return <Badge className="bg-warning text-warning-foreground">🟡 Bom</Badge>;
+      return <Badge variant="outline" className="text-green-600 border-green-600">🟢 Excelente</Badge>;
+    } else if (taxaAtivacao >= 33.4) {
+      return <Badge variant="outline" className="text-yellow-600 border-yellow-600">🟡 Média Ativação</Badge>;
     } else {
-      return <Badge variant="destructive">🔴 Atenção</Badge>;
+      return <Badge variant="outline" className="text-red-600 border-red-600">🔴 Baixa Ativação</Badge>;
     }
   };
 
