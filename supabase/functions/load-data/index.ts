@@ -688,6 +688,7 @@ Deno.serve(async (req) => {
 
             // Aggregate solar values by CNPJ
             const solarByClient: Map<string, number> = new Map();
+            let solarLinesProcessed = 0;
 
             for (let i = 1; i < records.length; i++) {
               const record = records[i];
@@ -704,6 +705,9 @@ Deno.serve(async (req) => {
                 continue;
               }
 
+              // Count each valid line processed
+              solarLinesProcessed++;
+
               // Parse value (Brazilian format)
               const valor = parseBrazilianNumber(valorStr);
               
@@ -713,7 +717,7 @@ Deno.serve(async (req) => {
               console.log(`[SolarSales] Row ${i}: CNPJ ${clienteId}, valor ${valor}, total ${current + valor}`);
             }
 
-            console.log(`[SolarSales] Aggregated ${solarByClient.size} unique CNPJs`);
+            console.log(`[SolarSales] Processed ${solarLinesProcessed} lines, aggregated to ${solarByClient.size} unique CNPJs`);
 
             // Insert aggregated values into solar_sales table
             for (const [clienteId, valorSolar] of solarByClient) {
@@ -729,17 +733,19 @@ Deno.serve(async (req) => {
                 console.error(`[SolarSales] Insert error for CNPJ ${clienteId}:`, error.message);
                 results.errors.push(`Solar Sales CNPJ ${clienteId}: ${error.message}`);
               } else {
-                results.solarSales++;
                 console.log(`[SolarSales] Inserted CNPJ ${clienteId} with valor_solar ${valorSolar}`);
               }
             }
             
+            // Set result as lines processed (not unique CNPJs)
+            results.solarSales = solarLinesProcessed;
+            
             // Validate insertion count
-            if (results.solarSales === 0 && solarByClient.size > 0) {
-              results.errors.push(`Solar Sales: Nenhum registro inserido de ${solarByClient.size} CNPJs.`);
+            if (solarByClient.size === 0 && solarLinesProcessed > 0) {
+              results.errors.push(`Solar Sales: Nenhum registro inserido de ${solarLinesProcessed} linhas.`);
             }
             
-            console.log(`[SolarSales] Total inserted: ${results.solarSales} records`);
+            console.log(`[SolarSales] Total lines processed: ${solarLinesProcessed}, unique CNPJs: ${solarByClient.size}`);
           }
         }
       } catch (error) {
