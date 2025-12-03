@@ -339,7 +339,7 @@ const Admin = () => {
       { table: 'Carteira', before: beforeCounts.wallet, after: afterCounts.wallet },
       { table: 'Transações', before: beforeCounts.transactions, after: afterCounts.transactions },
       { table: 'Estabelecimentos', before: beforeCounts.departmentStore, after: afterCounts.departmentStore },
-      { table: 'Registros com vendas de energia solar', before: beforeCounts.solarRecords, after: afterCounts.solarRecords, isSolar: true },
+      { table: 'Registros com vendas de energia solar', before: beforeCounts.solarRecords, after: loadResult?.solarSales ?? afterCounts.solarRecords, isSolar: true },
     ].map(c => ({ ...c, diff: c.after - c.before }));
 
     // Sempre mostrar popup após carregamento bem-sucedido
