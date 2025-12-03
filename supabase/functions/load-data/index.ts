@@ -746,82 +746,43 @@ Deno.serve(async (req) => {
               const premiacaoPct = 0.2;
               const premiacaoValor = valor * 0.002;
 
-              // Insert transaction as "Energia Solar"
-              const { error } = await supabaseClient.from('transactions').insert({
-                cliente_id: clienteId,
-                data_transacao: parsedDate,
-                tipo_venda: 'Energia Solar',
-                total_parcela: valor,
-                premiacao_pct_norm: 0.002, // 0.2% normalized
-                premiacao_valor: premiacaoValor,
-                estab_comercial: revenda || null,
-              });
+              // UPDATE existing transaction to mark as "Energia Solar" with 0.2% premium
+              // DO NOT INSERT - solar sales file only identifies which transactions are solar
+              const { data: updated, error } = await supabaseClient
+                .from('transactions')
+                .update({
+                  tipo_venda: 'Energia Solar',
+                  premiacao_pct_norm: 0.002, // 0.2%
+                  premiacao_valor: valor * 0.002,
+                })
+                .eq('cliente_id', clienteId)
+                .eq('data_transacao', parsedDate)
+                .select();
 
               if (error) {
-                console.error(`[SolarSales] Insert error row ${i}:`, error.message);
+                console.error(`[SolarSales] Update error row ${i}:`, error.message);
                 results.errors.push(`Solar Sales linha ${i}: ${error.message}`);
+              } else if (updated && updated.length > 0) {
+                results.solarUpdated += updated.length;
+                console.log(`[SolarSales] Updated transaction for CNPJ ${clienteId} on ${parsedDate}`);
               } else {
-                results.solarSales++;
+                console.log(`[SolarSales] No transaction found for CNPJ ${clienteId} on ${parsedDate}`);
               }
             }
             
-            // Validate insertion count
+            // Validate update count
             const expectedRows = records.length - 1;
-            if (results.solarSales === 0 && expectedRows > 0) {
-              results.errors.push(`Solar Sales: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
+            if (results.solarUpdated === 0 && expectedRows > 0) {
+              results.errors.push(`Solar Sales: Nenhuma transação atualizada de ${expectedRows} linhas. Verifique se os CNPJs e datas correspondem às transações existentes.`);
             }
+            
+            console.log(`[SolarSales] Total updated: ${results.solarUpdated} transactions`);
           }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         results.errors.push(`Solar Sales: ${errorMessage}`);
         console.error('[SolarSales] Error:', errorMessage);
-      }
-    }
-
-    // Update existing Solar Energy transactions when solar file is uploaded
-    if (solarSalesContent || solarSalesUrl) {
-      try {
-        console.log('[SolarSales] Updating existing Energia Solar transactions to 0.2%...');
-        
-        // Get all existing Energia Solar transactions
-        const { data: existingSolar, error: selectError } = await supabaseClient
-          .from('transactions')
-          .select('id, total_parcela, premiacao_pct_norm, premiacao_valor')
-          .eq('tipo_venda', 'Energia Solar');
-        
-        if (selectError) {
-          console.error('[SolarSales] Error fetching existing solar transactions:', selectError);
-        } else if (existingSolar && existingSolar.length > 0) {
-          console.log(`[SolarSales] Found ${existingSolar.length} existing solar transactions to update`);
-          
-          let updatedCount = 0;
-          
-          // Update each transaction with correct 0.2% reward
-          for (const tx of existingSolar) {
-            const newPremiacaoPctNorm = 0.002; // 0.2%
-            const newPremiacaoValor = tx.total_parcela * newPremiacaoPctNorm;
-            
-            const { error: updateError } = await supabaseClient
-              .from('transactions')
-              .update({
-                premiacao_pct_norm: newPremiacaoPctNorm,
-                premiacao_valor: newPremiacaoValor
-              })
-              .eq('id', tx.id);
-            
-            if (!updateError) {
-              updatedCount++;
-            } else {
-              console.error(`[SolarSales] Error updating transaction ${tx.id}:`, updateError);
-            }
-          }
-          
-          results.solarUpdated = updatedCount;
-          console.log(`[SolarSales] Updated ${updatedCount} existing solar transactions`);
-        }
-      } catch (error) {
-        console.error('[SolarSales] Error updating existing solar transactions:', error);
       }
     }
 
