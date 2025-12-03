@@ -87,18 +87,18 @@ const Admin = () => {
     
     if (error || !data) {
       console.error('Erro ao buscar contagens:', error);
-      return { participants: 0, wallet: 0, transactions: 0, departmentStore: 0, solarUpdated: 0 };
+      return { participants: 0, wallet: 0, transactions: 0, departmentStore: 0, solarRecords: 0 };
     }
     
     // Cast para tipo correto
-    const counts = data as { participants: number; wallet: number; transactions: number; departmentStore: number; solarUpdated: number };
+    const counts = data as { participants: number; wallet: number; transactions: number; departmentStore: number; solarRecords: number };
     
     return {
       participants: Number(counts.participants) || 0,
       wallet: Number(counts.wallet) || 0,
       transactions: Number(counts.transactions) || 0,
       departmentStore: Number(counts.departmentStore) || 0,
-      solarUpdated: Number(counts.solarUpdated) || 0,
+      solarRecords: Number(counts.solarRecords) || 0,
     };
   };
 
@@ -339,7 +339,7 @@ const Admin = () => {
       { table: 'Carteira', before: beforeCounts.wallet, after: afterCounts.wallet },
       { table: 'Transações', before: beforeCounts.transactions, after: afterCounts.transactions },
       { table: 'Estabelecimentos', before: beforeCounts.departmentStore, after: afterCounts.departmentStore },
-      { table: 'Vendas Solares Atualizadas', before: beforeCounts.solarUpdated, after: afterCounts.solarUpdated, isSolar: true },
+      { table: 'Registros com vendas solares registradas', before: beforeCounts.solarRecords, after: afterCounts.solarRecords, isSolar: true },
     ].map(c => ({ ...c, diff: c.after - c.before }));
 
     // Sempre mostrar popup após carregamento bem-sucedido

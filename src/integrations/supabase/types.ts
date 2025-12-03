@@ -140,6 +140,30 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_sales: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          valor_solar: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          valor_solar?: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          valor_solar?: number
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           cliente_id: string

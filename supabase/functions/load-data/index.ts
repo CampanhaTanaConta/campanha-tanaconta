@@ -650,7 +650,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Load solar sales data
+    // Load solar sales data - Aggregate by CNPJ and insert into solar_sales table
     if (solarSalesContent || solarSalesUrl) {
       try {
         let csvText: string;
@@ -673,110 +673,73 @@ Deno.serve(async (req) => {
 
           // Map columns
           const idxCnpj = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'Documento do EC', 'Documento EC', 'Doc EC']);
-          const idxDataProgramada = getIndex(headers, ['Data Programada', 'Data', 'Data Trans', 'Data Transacao']);
           const idxValor = getIndex(headers, ['Valor', 'Total', 'Total Parcela']);
-          const idxRevenda = getIndex(headers, ['Revenda', 'Estabelecimento Comercial', 'Estab Comercial', 'EC']);
 
-          console.log('[SolarSales] Column indices:', { 
-            idxCnpj, idxDataProgramada, idxValor, idxRevenda 
-          });
+          console.log('[SolarSales] Column indices:', { idxCnpj, idxValor });
 
           // Validate required columns
-          if (idxCnpj === -1 || idxDataProgramada === -1 || idxValor === -1) {
-            results.errors.push('Solar Sales: Colunas obrigatórias não encontradas (CNPJ, Data, Valor)');
+          if (idxCnpj === -1 || idxValor === -1) {
+            results.errors.push('Solar Sales: Colunas obrigatórias não encontradas (CNPJ, Valor)');
             console.error('[SolarSales] Missing required columns. Headers:', headers);
           } else {
-            // Process rows (skip header)
+            // Clear existing solar_sales data before inserting
+            await supabaseClient.from('solar_sales').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            console.log('[SolarSales] Cleared existing solar_sales records');
+
+            // Aggregate solar values by CNPJ
+            const solarByClient: Map<string, number> = new Map();
+
             for (let i = 1; i < records.length; i++) {
               const record = records[i];
               
               let cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
-              const dataProgramada = idxDataProgramada >= 0 ? String(record[idxDataProgramada] || '').trim() : '';
               const valorStr = idxValor >= 0 ? String(record[idxValor] || '0').trim() : '0';
-              const revenda = idxRevenda >= 0 ? String(record[idxRevenda] || '').trim() : '';
 
               // Handle CNPJ in scientific notation (e.g., 4,70188E+13)
               cnpjRaw = parseScientificCnpj(cnpjRaw);
               const clienteId = normalizeCnpj(cnpjRaw);
 
-              if (!clienteId || !dataProgramada) {
-                console.log('[SolarSales] Skipping row', i, '- missing CNPJ or date');
-                continue;
-              }
-
-              // Parse date (format can be yyyy-mm-dd, dd/mm/yyyy, or Excel serial number)
-              let parsedDate: string;
-              if (dataProgramada.includes('-')) {
-                // Format: 2025-11-12
-                parsedDate = dataProgramada;
-              } else if (dataProgramada.includes('/')) {
-                // Format: 12/11/2025
-                const [day, month, year] = dataProgramada.split('/');
-                if (!day || !month || !year) {
-                  console.log('[SolarSales] Skipping row', i, '- invalid date format:', dataProgramada);
-                  continue;
-                }
-                parsedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-              } else if (/^[\d.,E+]+$/i.test(dataProgramada)) {
-                // Excel serial number (e.g., 45600, 4.56E+4, 66796E+13)
-                // Excel counts days from 1900-01-01 (with a bug treating 1900 as leap year)
-                const serialNum = parseFloat(dataProgramada.replace(',', '.'));
-                if (serialNum > 0 && serialNum < 100000) {
-                  // Valid Excel serial for dates between 1900-2173
-                  const excelEpoch = new Date(1899, 11, 30); // 30/12/1899 (Excel day 0)
-                  const date = new Date(excelEpoch.getTime() + serialNum * 24 * 60 * 60 * 1000);
-                  const year = date.getFullYear();
-                  const month = String(date.getMonth() + 1).padStart(2, '0');
-                  const day = String(date.getDate()).padStart(2, '0');
-                  parsedDate = `${year}-${month}-${day}`;
-                  console.log('[SolarSales] Converted Excel serial', dataProgramada, 'to', parsedDate);
-                } else {
-                  console.log('[SolarSales] Skipping row', i, '- invalid Excel serial:', dataProgramada);
-                  continue;
-                }
-              } else {
-                console.log('[SolarSales] Skipping row', i, '- unrecognized date format:', dataProgramada);
+              if (!clienteId) {
+                console.log('[SolarSales] Skipping row', i, '- missing CNPJ');
                 continue;
               }
 
               // Parse value (Brazilian format)
               const valor = parseBrazilianNumber(valorStr);
               
-              // Fixed reward: 0.2% for Solar Energy sales
-              const premiacaoPct = 0.2;
-              const premiacaoValor = valor * 0.002;
+              // Aggregate by CNPJ
+              const current = solarByClient.get(clienteId) || 0;
+              solarByClient.set(clienteId, current + valor);
+              console.log(`[SolarSales] Row ${i}: CNPJ ${clienteId}, valor ${valor}, total ${current + valor}`);
+            }
 
-              // UPDATE existing transaction to mark as "Energia Solar" with 0.2% premium
-              // DO NOT INSERT - solar sales file only identifies which transactions are solar
-              const { data: updated, error } = await supabaseClient
-                .from('transactions')
-                .update({
-                  tipo_venda: 'Energia Solar',
-                  premiacao_pct_norm: 0.002, // 0.2%
-                  premiacao_valor: valor * 0.002,
-                })
-                .eq('cliente_id', clienteId)
-                .eq('data_transacao', parsedDate)
-                .select();
+            console.log(`[SolarSales] Aggregated ${solarByClient.size} unique CNPJs`);
+
+            // Insert aggregated values into solar_sales table
+            for (const [clienteId, valorSolar] of solarByClient) {
+              const { error } = await supabaseClient
+                .from('solar_sales')
+                .upsert({
+                  cliente_id: clienteId,
+                  valor_solar: valorSolar,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'cliente_id' });
 
               if (error) {
-                console.error(`[SolarSales] Update error row ${i}:`, error.message);
-                results.errors.push(`Solar Sales linha ${i}: ${error.message}`);
-              } else if (updated && updated.length > 0) {
-                results.solarUpdated += updated.length;
-                console.log(`[SolarSales] Updated transaction for CNPJ ${clienteId} on ${parsedDate}`);
+                console.error(`[SolarSales] Insert error for CNPJ ${clienteId}:`, error.message);
+                results.errors.push(`Solar Sales CNPJ ${clienteId}: ${error.message}`);
               } else {
-                console.log(`[SolarSales] No transaction found for CNPJ ${clienteId} on ${parsedDate}`);
+                results.solarSales++;
+                console.log(`[SolarSales] Inserted CNPJ ${clienteId} with valor_solar ${valorSolar}`);
               }
             }
             
-            // Validate update count
-            const expectedRows = records.length - 1;
-            if (results.solarUpdated === 0 && expectedRows > 0) {
-              results.errors.push(`Solar Sales: Nenhuma transação atualizada de ${expectedRows} linhas. Verifique se os CNPJs e datas correspondem às transações existentes.`);
+            // Validate insertion count
+            if (results.solarSales === 0 && solarByClient.size > 0) {
+              results.errors.push(`Solar Sales: Nenhum registro inserido de ${solarByClient.size} CNPJs.`);
             }
             
-            console.log(`[SolarSales] Total updated: ${results.solarUpdated} transactions`);
+            console.log(`[SolarSales] Total inserted: ${results.solarSales} records`);
           }
         }
       } catch (error) {
