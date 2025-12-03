@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useLoadData } from '@/hooks/useLoadData';
 import { Loader2, Upload, CheckCircle2, AlertCircle, LogOut, UserPlus, Sun } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +40,15 @@ const Admin = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   
+  // Comparison dialog states
+  const [showCompareDialog, setShowCompareDialog] = useState(false);
+  const [compareData, setCompareData] = useState<{
+    table: string;
+    before: number;
+    after: number;
+    diff: number;
+  }[]>([]);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,6 +77,23 @@ const Admin = () => {
       }
     }
   }, [participante, isAdmin, navigate]);
+
+  // Função para buscar contagens atuais do banco
+  const fetchCurrentCounts = async () => {
+    const [participants, wallet, transactions, departmentStore] = await Promise.all([
+      supabase.from('participants').select('id', { count: 'exact', head: true }),
+      supabase.from('wallet').select('id', { count: 'exact', head: true }),
+      supabase.from('transactions').select('id', { count: 'exact', head: true }),
+      supabase.from('department_store').select('id', { count: 'exact', head: true }),
+    ]);
+    
+    return {
+      participants: participants.count || 0,
+      wallet: wallet.count || 0,
+      transactions: transactions.count || 0,
+      departmentStore: departmentStore.count || 0,
+    };
+  };
 
   // Função para identificar tipo de arquivo pelo nome
   const identifyFileType = (fileName: string): 'participants' | 'wallet' | 'transactions' | 'departmentStore' | 'solarSales' | null => {
@@ -162,15 +189,19 @@ const Admin = () => {
       // Identificar tipo
       const detectedType = identifyFileType(file.name);
       
-      // Verificar duplicatas
-      const existingFile = uploadedFiles.find(uf => uf.type === detectedType && detectedType !== null);
-      if (existingFile) {
-        toast({
-          title: "Arquivo duplicado",
-          description: `Já existe um arquivo do tipo ${getTypeLabel(detectedType)}`,
-          variant: "destructive",
-        });
-        return;
+      // Verificar se já existe arquivo do mesmo tipo - SUBSTITUIR ao invés de bloquear
+      if (detectedType !== null) {
+        const existingIndex = uploadedFiles.findIndex(uf => uf.type === detectedType);
+        if (existingIndex !== -1) {
+          // Revogar URL blob do arquivo antigo
+          URL.revokeObjectURL(uploadedFiles[existingIndex].blobUrl);
+          // Remover arquivo antigo
+          setUploadedFiles(prev => prev.filter((_, i) => i !== existingIndex));
+          toast({
+            title: "Arquivo substituído",
+            description: `O arquivo de ${getTypeLabel(detectedType)} foi substituído`,
+          });
+        }
       }
       
       // Criar Blob URL
@@ -200,14 +231,24 @@ const Admin = () => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleChangeFileType = (index: number, newType: 'participants' | 'wallet' | 'transactions' | 'departmentStore') => {
-    // Verificar se já existe arquivo deste tipo
-    const existingFile = uploadedFiles.find((uf, i) => uf.type === newType && i !== index);
-    if (existingFile) {
+  const handleChangeFileType = (index: number, newType: 'participants' | 'wallet' | 'transactions' | 'departmentStore' | 'solarSales') => {
+    // Verificar se já existe arquivo deste tipo - SUBSTITUIR ao invés de bloquear
+    const existingIndex = uploadedFiles.findIndex((uf, i) => uf.type === newType && i !== index);
+    if (existingIndex !== -1) {
+      // Revogar URL blob do arquivo antigo
+      URL.revokeObjectURL(uploadedFiles[existingIndex].blobUrl);
+      // Remover arquivo antigo e atualizar tipo do atual
+      setUploadedFiles(prev => {
+        const filtered = prev.filter((_, i) => i !== existingIndex);
+        // Ajustar índice se necessário
+        const adjustedIndex = existingIndex < index ? index - 1 : index;
+        return filtered.map((uf, i) => 
+          i === adjustedIndex ? { ...uf, type: newType, autoDetected: false } : uf
+        );
+      });
       toast({
-        title: "Tipo já em uso",
-        description: `Já existe um arquivo do tipo ${getTypeLabel(newType)}`,
-        variant: "destructive",
+        title: "Arquivo substituído",
+        description: `O arquivo de ${getTypeLabel(newType)} foi substituído`,
       });
       return;
     }
@@ -237,6 +278,9 @@ const Admin = () => {
       departmentStoreUrl,
       solarSalesUrl,
     }));
+
+    // Buscar contagens ANTES do upload
+    const beforeCounts = await fetchCurrentCounts();
 
     // Construir payload com conteúdo dos arquivos ou URLs
     const payload: any = {};
@@ -278,6 +322,24 @@ const Admin = () => {
     }
 
     await loadData(payload);
+
+    // Buscar contagens DEPOIS do upload
+    const afterCounts = await fetchCurrentCounts();
+
+    // Comparar e identificar diferenças
+    const comparisons = [
+      { table: 'Participantes', before: beforeCounts.participants, after: afterCounts.participants },
+      { table: 'Carteira', before: beforeCounts.wallet, after: afterCounts.wallet },
+      { table: 'Transações', before: beforeCounts.transactions, after: afterCounts.transactions },
+      { table: 'Estabelecimentos', before: beforeCounts.departmentStore, after: afterCounts.departmentStore },
+    ].map(c => ({ ...c, diff: c.after - c.before }));
+
+    // Se houver qualquer diferença, mostrar popup
+    const hasChanges = comparisons.some(c => c.diff !== 0);
+    if (hasChanges) {
+      setCompareData(comparisons);
+      setShowCompareDialog(true);
+    }
     
     // Limpar arquivos após carregamento bem-sucedido
     uploadedFiles.forEach(uf => URL.revokeObjectURL(uf.blobUrl));
@@ -420,6 +482,40 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Dialog de comparação de registros */}
+      <Dialog open={showCompareDialog} onOpenChange={setShowCompareDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Alteração nos Registros
+            </DialogTitle>
+            <DialogDescription>
+              A quantidade de registros foi alterada após o carregamento:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {compareData.map((item) => (
+              <div key={item.table} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                <span className="font-medium">{item.table}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">{item.before}</span>
+                  <span>→</span>
+                  <span className={item.diff > 0 ? 'text-green-600 font-bold' : item.diff < 0 ? 'text-red-600 font-bold' : ''}>
+                    {item.after}
+                  </span>
+                  {item.diff !== 0 && (
+                    <span className={item.diff > 0 ? 'text-green-600' : 'text-red-600'}>
+                      ({item.diff > 0 ? '+' : ''}{item.diff})
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
