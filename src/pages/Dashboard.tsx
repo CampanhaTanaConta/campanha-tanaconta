@@ -375,24 +375,18 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
-          // Calcular quais revendas venderam Energia Solar
-          const clientsWithSolarSales = new Set(
-            transactions
-              ?.filter(t => t.tipo_venda === 'Energia Solar')
-              .map(t => t.cliente_id) || []
-          );
-
-          const solarSalesClients = clientsWithSolarSales.size;
-          const nonSolarSalesClients = totalClients - solarSalesClients;
-
-          // Calcular vendas de Energia Solar por revenda
+          // Calcular quais revendas têm vendas de Energia Solar (usando valor_solar da tabela solar_sales)
           const solarSalesByClient = transactions?.reduce((acc, t) => {
-            if (t.tipo_venda === 'Energia Solar') {
-              const clientId = t.cliente_id;
-              acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            const clientId = t.cliente_id;
+            const valorSolar = Number(t.valor_solar || 0);
+            if (valorSolar > 0) {
+              acc[clientId] = (acc[clientId] || 0) + valorSolar;
             }
             return acc;
           }, {} as Record<string, number>) || {};
+
+          const solarSalesClients = Object.keys(solarSalesByClient).length;
+          const nonSolarSalesClients = totalClients - solarSalesClients;
 
           // Criar mapa de cliente_id para estab_comercial
           const estabComercialByClient = transactions?.reduce((acc, t) => {
@@ -602,24 +596,18 @@ const Dashboard = () => {
             return acc;
           }, {} as Record<string, { outubro: number; novembro: number; dezembro: number; janeiro: number; fevereiro: number; marco: number }>) || {};
 
-          // Calcular quais revendas venderam Energia Solar
-          const clientsWithSolarSales = new Set(
-            transactions
-              ?.filter(t => t.tipo_venda === 'Energia Solar')
-              .map(t => t.cliente_id) || []
-          );
-
-          const solarSalesClients = clientsWithSolarSales.size;
-          const nonSolarSalesClients = totalClients - solarSalesClients;
-
-          // Calcular vendas de Energia Solar por revenda
+          // Calcular quais revendas têm vendas de Energia Solar (usando valor_solar da tabela solar_sales)
           const solarSalesByClient = transactions?.reduce((acc, t) => {
-            if (t.tipo_venda === 'Energia Solar') {
-              const clientId = t.cliente_id;
-              acc[clientId] = (acc[clientId] || 0) + Number(t.total_parcela);
+            const clientId = t.cliente_id;
+            const valorSolar = Number(t.valor_solar || 0);
+            if (valorSolar > 0) {
+              acc[clientId] = (acc[clientId] || 0) + valorSolar;
             }
             return acc;
           }, {} as Record<string, number>) || {};
+
+          const solarSalesClients = Object.keys(solarSalesByClient).length;
+          const nonSolarSalesClients = totalClients - solarSalesClients;
 
           // Criar mapa de cliente_id para estab_comercial
           const estabComercialByClient = transactions?.reduce((acc, t) => {
