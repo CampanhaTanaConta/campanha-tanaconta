@@ -66,6 +66,48 @@ function parseBrazilianNumber(value: string): number {
   return parseFloat(cleaned) || 0;
 }
 
+// Utility: Clean CSV text to handle malformed quotes
+function cleanCsvText(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const cleanedLines = lines.map(line => {
+    let inQuotedField = false;
+    let result = '';
+    let i = 0;
+    
+    while (i < line.length) {
+      const char = line[i];
+      const prevChar = i > 0 ? line[i - 1] : '';
+      const nextChar = line[i + 1];
+      
+      if (char === '"') {
+        if (!inQuotedField && (i === 0 || prevChar === ',' || prevChar === ';')) {
+          // Start of quoted field
+          inQuotedField = true;
+          result += char;
+        } else if (inQuotedField && nextChar === '"') {
+          // Escaped quote inside quoted field
+          result += '""';
+          i++;
+        } else if (inQuotedField && (nextChar === ',' || nextChar === ';' || nextChar === undefined || nextChar === '\r')) {
+          // End of quoted field
+          inQuotedField = false;
+          result += char;
+        } else if (!inQuotedField) {
+          // Bare quote in non-quoted field - remove it
+          console.log('[CSV Cleaner] Removing bare quote at position', i);
+        } else {
+          result += char;
+        }
+      } else {
+        result += char;
+      }
+      i++;
+    }
+    return result;
+  });
+  return cleanedLines.join('\n');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -477,7 +519,9 @@ Deno.serve(async (req) => {
           const response = await fetch(solarSalesUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: false });
+        // Clean CSV to handle malformed quotes
+        const cleanedCsvText = cleanCsvText(csvText);
+        const records = parse(cleanedCsvText, { skipFirstRow: false });
         console.log('[SolarSales] Total records:', records.length);
 
         if (records.length === 0) {
