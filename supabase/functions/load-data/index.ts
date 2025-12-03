@@ -68,16 +68,25 @@ function parseBrazilianNumber(value: string): number {
 
 // Utility: Remove BOM from text
 // Utility: Parse CNPJ in Brazilian scientific notation (e.g., 4,70188E+13)
+// Uses string manipulation to preserve all 14 digits (parseFloat loses precision)
 function parseScientificCnpj(value: string): string {
   if (!value) return '';
+  
   // Detect Brazilian scientific notation (e.g., 4,70188E+13 or 4.70188E+13)
-  if (/[eE]/.test(value)) {
-    const normalized = value.replace(',', '.');
-    const num = parseFloat(normalized);
-    if (!isNaN(num) && num > 1e10) {
-      return Math.round(num).toString();
+  const match = value.match(/^(\d+)[,.](\d+)[eE]\+?(\d+)$/);
+  if (match) {
+    const [, intPart, decPart, expStr] = match;
+    const exp = parseInt(expStr, 10);
+    const fullNumber = intPart + decPart;
+    const targetLength = exp + 1;
+    
+    // Pad with zeros if needed, or truncate if too long
+    if (fullNumber.length < targetLength) {
+      return fullNumber.padEnd(targetLength, '0');
     }
+    return fullNumber.slice(0, targetLength);
   }
+  
   return value;
 }
 
