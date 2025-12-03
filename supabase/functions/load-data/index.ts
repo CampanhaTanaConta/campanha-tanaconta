@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
         // Skip header row manually (start from index 1)
         for (let i = 1; i < records.length; i++) {
           const record = records[i];
+          const distribuidor = String(record[0] || '').trim(); // Column 0 = Distribuidor
           const email = String(record[4] || '').trim().toLowerCase();
           const participante = String(record[2] || '').trim();
           const nascimento = String(record[5] || '').trim();
@@ -297,6 +298,7 @@ Deno.serve(async (req) => {
                 participante,
                 birth_raw: birthDate,
                 birth_hash: birthHash,
+                distribuidor: distribuidor || null,
               },
               { onConflict: 'email' }
             );
