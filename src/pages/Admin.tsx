@@ -47,8 +47,8 @@ const Admin = () => {
     before: number;
     after: number;
     diff: number;
+    isSolar?: boolean;
   }[]>([]);
-  const [solarUpdatedCount, setSolarUpdatedCount] = useState(0);
   
   const { toast } = useToast();
 
@@ -87,17 +87,18 @@ const Admin = () => {
     
     if (error || !data) {
       console.error('Erro ao buscar contagens:', error);
-      return { participants: 0, wallet: 0, transactions: 0, departmentStore: 0 };
+      return { participants: 0, wallet: 0, transactions: 0, departmentStore: 0, solarUpdated: 0 };
     }
     
     // Cast para tipo correto
-    const counts = data as { participants: number; wallet: number; transactions: number; departmentStore: number };
+    const counts = data as { participants: number; wallet: number; transactions: number; departmentStore: number; solarUpdated: number };
     
     return {
       participants: Number(counts.participants) || 0,
       wallet: Number(counts.wallet) || 0,
       transactions: Number(counts.transactions) || 0,
       departmentStore: Number(counts.departmentStore) || 0,
+      solarUpdated: Number(counts.solarUpdated) || 0,
     };
   };
 
@@ -338,11 +339,11 @@ const Admin = () => {
       { table: 'Carteira', before: beforeCounts.wallet, after: afterCounts.wallet },
       { table: 'Transações', before: beforeCounts.transactions, after: afterCounts.transactions },
       { table: 'Estabelecimentos', before: beforeCounts.departmentStore, after: afterCounts.departmentStore },
+      { table: 'Vendas Solares Atualizadas', before: beforeCounts.solarUpdated, after: afterCounts.solarUpdated, isSolar: true },
     ].map(c => ({ ...c, diff: c.after - c.before }));
 
     // Sempre mostrar popup após carregamento bem-sucedido
     setCompareData(comparisons);
-    setSolarUpdatedCount(loadResult?.solarUpdated || 0);
     setShowCompareDialog(true);
     
     // Limpar arquivos após carregamento bem-sucedido
@@ -500,33 +501,33 @@ const Admin = () => {
           </DialogHeader>
           <div className="space-y-3 mt-4">
             {compareData.map((item) => (
-              <div key={item.table} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                <span className="font-medium">{item.table}</span>
+              <div key={item.table} className={`flex items-center justify-between p-3 rounded-lg ${
+                item.isSolar 
+                  ? 'bg-orange-50 border border-orange-200' 
+                  : 'bg-muted'
+              }`}>
+                <span className={`font-medium ${item.isSolar ? 'text-orange-700 flex items-center gap-2' : ''}`}>
+                  {item.isSolar && <Sun className="h-4 w-4" />}
+                  {item.table}
+                </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">{item.before}</span>
+                  <span className={item.isSolar ? 'text-orange-600' : 'text-muted-foreground'}>{item.before}</span>
                   <span>→</span>
-                  <span className={item.diff > 0 ? 'text-green-600 font-bold' : item.diff < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
+                  <span className={`font-bold ${
+                    item.isSolar ? 'text-orange-700' :
+                    item.diff > 0 ? 'text-green-600' : 
+                    item.diff < 0 ? 'text-red-600' : ''
+                  }`}>
                     {item.after}
                   </span>
                   {item.diff !== 0 && (
-                    <span className={item.diff > 0 ? 'text-green-600' : 'text-red-600'}>
+                    <span className={item.isSolar ? 'text-orange-600' : item.diff > 0 ? 'text-green-600' : 'text-red-600'}>
                       ({item.diff > 0 ? '+' : ''}{item.diff})
                     </span>
                   )}
                 </div>
               </div>
             ))}
-            {solarUpdatedCount > 0 && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-200">
-                <span className="font-medium text-orange-700 flex items-center gap-2">
-                  <Sun className="h-4 w-4" />
-                  Vendas Solares Atualizadas
-                </span>
-                <span className="font-semibold text-orange-700">
-                  {solarUpdatedCount} transações
-                </span>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
