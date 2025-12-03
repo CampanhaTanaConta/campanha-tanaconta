@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { participante, isAdmin, logout } = useAuth();
+  const { participante, isAdmin, logout, userEmail } = useAuth();
   const { loadData, isLoading, result } = useLoadData();
 
   const [participantsUrl, setParticipantsUrl] = useState('');
@@ -78,20 +78,25 @@ const Admin = () => {
     }
   }, [participante, isAdmin, navigate]);
 
-  // Função para buscar contagens atuais do banco
+  // Função para buscar contagens atuais do banco (via RPC para bypass RLS)
   const fetchCurrentCounts = async () => {
-    const [participants, wallet, transactions, departmentStore] = await Promise.all([
-      supabase.from('participants').select('id', { count: 'exact', head: true }),
-      supabase.from('wallet').select('id', { count: 'exact', head: true }),
-      supabase.from('transactions').select('id', { count: 'exact', head: true }),
-      supabase.from('department_store').select('id', { count: 'exact', head: true }),
-    ]);
+    const { data, error } = await supabase.rpc('get_admin_table_counts', { 
+      p_email: userEmail || '' 
+    });
+    
+    if (error || !data) {
+      console.error('Erro ao buscar contagens:', error);
+      return { participants: 0, wallet: 0, transactions: 0, departmentStore: 0 };
+    }
+    
+    // Cast para tipo correto
+    const counts = data as { participants: number; wallet: number; transactions: number; departmentStore: number };
     
     return {
-      participants: participants.count || 0,
-      wallet: wallet.count || 0,
-      transactions: transactions.count || 0,
-      departmentStore: departmentStore.count || 0,
+      participants: Number(counts.participants) || 0,
+      wallet: Number(counts.wallet) || 0,
+      transactions: Number(counts.transactions) || 0,
+      departmentStore: Number(counts.departmentStore) || 0,
     };
   };
 

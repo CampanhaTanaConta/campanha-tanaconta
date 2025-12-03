@@ -240,6 +240,7 @@ export type Database = {
       get_admin_dashboard_data:
         | { Args: { p_email: string }; Returns: Json }
         | { Args: never; Returns: Json }
+      get_admin_table_counts: { Args: { p_email: string }; Returns: Json }
       get_dashboard_slices: {
         Args: { p_email: string; p_participante: string }
         Returns: Json
