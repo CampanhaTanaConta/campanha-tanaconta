@@ -629,10 +629,10 @@ Deno.serve(async (req) => {
           console.log('[SolarSales] Headers:', headers);
 
           // Map columns
-          const idxCnpj = getIndex(headers, ['CNPJ', 'CPF/CNPJ']);
-          const idxDataProgramada = getIndex(headers, ['Data Programada', 'Data']);
-          const idxValor = getIndex(headers, ['Valor']);
-          const idxRevenda = getIndex(headers, ['Revenda']);
+          const idxCnpj = getIndex(headers, ['CNPJ', 'CPF/CNPJ', 'Documento do EC', 'Documento EC', 'Doc EC']);
+          const idxDataProgramada = getIndex(headers, ['Data Programada', 'Data', 'Data Trans', 'Data Transacao']);
+          const idxValor = getIndex(headers, ['Valor', 'Total', 'Total Parcela']);
+          const idxRevenda = getIndex(headers, ['Revenda', 'Estabelecimento Comercial', 'Estab Comercial', 'EC']);
 
           console.log('[SolarSales] Column indices:', { 
             idxCnpj, idxDataProgramada, idxValor, idxRevenda 
