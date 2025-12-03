@@ -48,6 +48,7 @@ const Admin = () => {
     after: number;
     diff: number;
   }[]>([]);
+  const [solarUpdatedCount, setSolarUpdatedCount] = useState(0);
   
   const { toast } = useToast();
 
@@ -326,7 +327,7 @@ const Admin = () => {
       return;
     }
 
-    await loadData(payload);
+    const loadResult = await loadData(payload);
 
     // Buscar contagens DEPOIS do upload
     const afterCounts = await fetchCurrentCounts();
@@ -341,6 +342,7 @@ const Admin = () => {
 
     // Sempre mostrar popup após carregamento bem-sucedido
     setCompareData(comparisons);
+    setSolarUpdatedCount(loadResult?.solarUpdated || 0);
     setShowCompareDialog(true);
     
     // Limpar arquivos após carregamento bem-sucedido
@@ -514,6 +516,17 @@ const Admin = () => {
                 </div>
               </div>
             ))}
+            {solarUpdatedCount > 0 && (
+              <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-200">
+                <span className="font-medium text-orange-700 flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  Vendas Solares Atualizadas
+                </span>
+                <span className="font-semibold text-orange-700">
+                  {solarUpdatedCount} transações
+                </span>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

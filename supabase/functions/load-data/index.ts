@@ -222,6 +222,7 @@ Deno.serve(async (req) => {
       transactions: 0,
       departmentStore: 0,
       solarSales: 0,
+      solarUpdated: 0,
       errors: [] as string[],
       stats: {
         walletIds: 0,
@@ -775,6 +776,8 @@ Deno.serve(async (req) => {
         } else if (existingSolar && existingSolar.length > 0) {
           console.log(`[SolarSales] Found ${existingSolar.length} existing solar transactions to update`);
           
+          let updatedCount = 0;
+          
           // Update each transaction with correct 0.2% reward
           for (const tx of existingSolar) {
             const newPremiacaoPctNorm = 0.002; // 0.2%
@@ -788,12 +791,15 @@ Deno.serve(async (req) => {
               })
               .eq('id', tx.id);
             
-            if (updateError) {
+            if (!updateError) {
+              updatedCount++;
+            } else {
               console.error(`[SolarSales] Error updating transaction ${tx.id}:`, updateError);
             }
           }
           
-          console.log('[SolarSales] Finished updating existing solar transactions');
+          results.solarUpdated = updatedCount;
+          console.log(`[SolarSales] Updated ${updatedCount} existing solar transactions`);
         }
       } catch (error) {
         console.error('[SolarSales] Error updating existing solar transactions:', error);
