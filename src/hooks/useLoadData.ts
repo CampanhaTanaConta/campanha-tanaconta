@@ -21,7 +21,6 @@ interface LoadDataResponse {
   transactions: number;
   departmentStore: number;
   solarSales: number;
-  solarUpdated?: number;
   errors: string[];
   stats: {
     walletIds: number;
