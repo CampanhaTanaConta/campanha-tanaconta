@@ -60,16 +60,6 @@ export const useLoadData = () => {
       const data = await invokeWithRetry(urls);
 
       setResult(data);
-      
-      const statsMessage = data.stats 
-        ? ` | CNPJs: ${data.stats.walletIds} carteira, ${data.stats.txIds} transações, ${data.stats.intersection} correspondências`
-        : '';
-      
-      toast({
-        title: "Dados carregados com sucesso!",
-        description: `${data.participants} participantes, ${data.wallet} carteira, ${data.transactions} transações, ${data.solarSales} vendas solares, ${data.departmentStore} estabelecimentos${statsMessage}`,
-      });
-
       return data;
     } catch (error) {
       console.error('Error loading data:', error);

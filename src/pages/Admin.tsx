@@ -334,12 +334,9 @@ const Admin = () => {
       { table: 'Estabelecimentos', before: beforeCounts.departmentStore, after: afterCounts.departmentStore },
     ].map(c => ({ ...c, diff: c.after - c.before }));
 
-    // Se houver qualquer diferença, mostrar popup
-    const hasChanges = comparisons.some(c => c.diff !== 0);
-    if (hasChanges) {
-      setCompareData(comparisons);
-      setShowCompareDialog(true);
-    }
+    // Sempre mostrar popup após carregamento bem-sucedido
+    setCompareData(comparisons);
+    setShowCompareDialog(true);
     
     // Limpar arquivos após carregamento bem-sucedido
     uploadedFiles.forEach(uf => URL.revokeObjectURL(uf.blobUrl));
@@ -482,16 +479,16 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {/* Dialog de comparação de registros */}
-      <Dialog open={showCompareDialog} onOpenChange={setShowCompareDialog}>
-        <DialogContent className="sm:max-w-md">
+      {/* Dialog de comparação de registros - CENTRALIZADO */}
+      <Dialog open={showCompareDialog} onOpenChange={(open) => setShowCompareDialog(open)}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              Alteração nos Registros
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
+              Dados Carregados com Sucesso
             </DialogTitle>
             <DialogDescription>
-              A quantidade de registros foi alterada após o carregamento:
+              Comparação de registros antes e depois do carregamento:
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-4">
@@ -501,7 +498,7 @@ const Admin = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">{item.before}</span>
                   <span>→</span>
-                  <span className={item.diff > 0 ? 'text-green-600 font-bold' : item.diff < 0 ? 'text-red-600 font-bold' : ''}>
+                  <span className={item.diff > 0 ? 'text-green-600 font-bold' : item.diff < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
                     {item.after}
                   </span>
                   {item.diff !== 0 && (
