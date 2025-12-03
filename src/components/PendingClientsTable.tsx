@@ -32,7 +32,9 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
   };
 
   const formatPhoneForWhatsApp = (phone: string): string => {
-    const cleaned = phone.replace(/\D/g, '');
+    // Remover espaços no início/fim e todos os caracteres não-numéricos
+    const cleaned = phone.trim().replace(/\D/g, '');
+    console.log('[WhatsApp] Phone input:', phone, '-> cleaned:', cleaned);
     return cleaned.startsWith('55') ? cleaned : `55${cleaned}`;
   };
 
@@ -41,6 +43,12 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
     const message = encodeURIComponent(
       'Olá! Como está a adoção da maquininha Tá na Conta? Tem alguma dúvida que eu possa ajudar?'
     );
+    
+    // Validar se tem pelo menos 12 dígitos (55 + DDD + número)
+    if (formattedPhone.length < 12) {
+      console.warn('[WhatsApp] Número inválido:', formattedPhone);
+    }
+    
     return `https://wa.me/${formattedPhone}?text=${message}`;
   };
 
