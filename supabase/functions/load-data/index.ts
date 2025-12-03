@@ -71,20 +71,45 @@ function removeBom(text: string): string {
   return text.replace(/^\uFEFF/, '');
 }
 
-// Utility: Detect CSV separator from first line
+// Utility: Detect CSV separator from both header AND data lines
 function detectSeparator(text: string): string {
-  const firstLine = text.split(/\r?\n/)[0] || '';
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
   
-  const semicolonCount = (firstLine.match(/;/g) || []).length;
-  const commaCount = (firstLine.match(/,/g) || []).length;
+  // Check multiple lines (header + first few data lines) for more reliable detection
+  const linesToCheck = lines.slice(0, Math.min(5, lines.length));
+  
+  let totalSemicolons = 0;
+  let totalCommas = 0;
+  
+  for (const line of linesToCheck) {
+    // Count separators outside of quoted strings
+    let inQuotes = false;
+    let semicolons = 0;
+    let commas = 0;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (!inQuotes) {
+        if (char === ';') semicolons++;
+        if (char === ',') commas++;
+      }
+    }
+    
+    totalSemicolons += semicolons;
+    totalCommas += commas;
+  }
+  
+  console.log('[CSV] Separator detection across', linesToCheck.length, 'lines - semicolons:', totalSemicolons, 'commas:', totalCommas);
   
   // Use the more frequent delimiter
-  if (semicolonCount > commaCount) {
-    console.log('[CSV] Detected separator: semicolon (;), count:', semicolonCount, 'vs comma:', commaCount);
+  if (totalSemicolons > totalCommas) {
+    console.log('[CSV] Detected separator: semicolon (;)');
     return ';';
   }
   
-  console.log('[CSV] Detected separator: comma (,), count:', commaCount, 'vs semicolon:', semicolonCount);
+  console.log('[CSV] Detected separator: comma (,)');
   return ',';
 }
 
