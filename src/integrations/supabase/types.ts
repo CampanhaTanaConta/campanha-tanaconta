@@ -118,6 +118,7 @@ export type Database = {
           birth_hash: string
           birth_raw: string
           created_at: string | null
+          distribuidor: string | null
           email: string
           id: string
           participante: string
@@ -126,6 +127,7 @@ export type Database = {
           birth_hash: string
           birth_raw: string
           created_at?: string | null
+          distribuidor?: string | null
           email: string
           id?: string
           participante: string
@@ -134,6 +136,7 @@ export type Database = {
           birth_hash?: string
           birth_raw?: string
           created_at?: string | null
+          distribuidor?: string | null
           email?: string
           id?: string
           participante?: string
