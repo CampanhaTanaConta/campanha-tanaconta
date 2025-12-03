@@ -66,6 +66,59 @@ function parseBrazilianNumber(value: string): number {
   return parseFloat(cleaned) || 0;
 }
 
+// Utility: Remove BOM from text
+function removeBom(text: string): string {
+  return text.replace(/^\uFEFF/, '');
+}
+
+// Utility: Detect CSV separator from first line
+function detectSeparator(text: string): string {
+  const firstLine = text.split(/\r?\n/)[0] || '';
+  
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  
+  // Use the more frequent delimiter
+  if (semicolonCount > commaCount) {
+    console.log('[CSV] Detected separator: semicolon (;), count:', semicolonCount, 'vs comma:', commaCount);
+    return ';';
+  }
+  
+  console.log('[CSV] Detected separator: comma (,), count:', commaCount, 'vs semicolon:', semicolonCount);
+  return ',';
+}
+
+// Utility: Normalize CSV to use comma separator
+function normalizeCsvSeparator(text: string): string {
+  const cleanText = removeBom(text);
+  const separator = detectSeparator(cleanText);
+  
+  if (separator === ',') return cleanText;
+  
+  // Replace semicolons with commas, but preserve semicolons inside quoted fields
+  const lines = cleanText.split(/\r?\n/);
+  const normalizedLines = lines.map(line => {
+    let result = '';
+    let inQuotes = false;
+    
+    for (const char of line) {
+      if (char === '"') {
+        inQuotes = !inQuotes;
+        result += char;
+      } else if (char === ';' && !inQuotes) {
+        result += ',';
+      } else {
+        result += char;
+      }
+    }
+    
+    return result;
+  });
+  
+  console.log('[CSV] Normalized separator from semicolon to comma');
+  return normalizedLines.join('\n');
+}
+
 // Utility: Clean CSV text to handle malformed quotes
 function cleanCsvText(text: string): string {
   const lines = text.split(/\r?\n/);
@@ -106,6 +159,12 @@ function cleanCsvText(text: string): string {
     return result;
   });
   return cleanedLines.join('\n');
+}
+
+// Utility: Full CSV preprocessing (BOM removal, separator normalization, quote cleaning)
+function preprocessCsv(text: string): string {
+  const normalized = normalizeCsvSeparator(text);
+  return cleanCsvText(normalized);
 }
 
 Deno.serve(async (req) => {
@@ -156,7 +215,9 @@ Deno.serve(async (req) => {
           const response = await fetch(participantsUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: false });
+        const processedCsv = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false });
+        console.log('[Participants] Total records:', records.length);
 
         // Skip header row manually (start from index 1)
         for (let i = 1; i < records.length; i++) {
@@ -188,11 +249,23 @@ Deno.serve(async (req) => {
               { onConflict: 'email' }
             );
 
-          if (!error) results.participants++;
+          if (error) {
+            console.error(`[Participants] Insert error row ${i}:`, error.message);
+            results.errors.push(`Participants linha ${i}: ${error.message}`);
+          } else {
+            results.participants++;
+          }
+        }
+        
+        // Validate insertion count
+        const expectedRows = records.length - 1;
+        if (results.participants === 0 && expectedRows > 0) {
+          results.errors.push(`Participants: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         results.errors.push(`Participants: ${errorMessage}`);
+        console.error('[Participants] Error:', errorMessage);
       }
     }
 
@@ -206,7 +279,8 @@ Deno.serve(async (req) => {
           const response = await fetch(walletUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: false });
+        const processedCsv = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false });
         console.log('[Wallet] Total records:', records.length);
 
         if (records.length === 0) {
@@ -252,7 +326,18 @@ Deno.serve(async (req) => {
               distribuidor: distribuidor || null,
             });
 
-            if (!error) results.wallet++;
+            if (error) {
+              console.error(`[Wallet] Insert error row ${i}:`, error.message);
+              results.errors.push(`Wallet linha ${i}: ${error.message}`);
+            } else {
+              results.wallet++;
+            }
+          }
+          
+          // Validate insertion count
+          const expectedRows = records.length - 1;
+          if (results.wallet === 0 && expectedRows > 0) {
+            results.errors.push(`Wallet: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
           }
           }
         }
@@ -273,7 +358,8 @@ Deno.serve(async (req) => {
           const response = await fetch(transactionsUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: false });
+        const processedCsv = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false });
         console.log('[Transactions] Total records:', records.length);
 
         if (records.length === 0) {
@@ -371,7 +457,18 @@ Deno.serve(async (req) => {
               estab_comercial: estabComercial || null,
             });
 
-            if (!error) results.transactions++;
+            if (error) {
+              console.error(`[Transactions] Insert error row ${i}:`, error.message);
+              results.errors.push(`Transactions linha ${i}: ${error.message}`);
+            } else {
+              results.transactions++;
+            }
+          }
+          
+          // Validate insertion count
+          const expectedRows = records.length - 1;
+          if (results.transactions === 0 && expectedRows > 0) {
+            results.errors.push(`Transactions: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
           }
           }
         }
@@ -394,7 +491,8 @@ Deno.serve(async (req) => {
           const response = await fetch(departmentStoreUrl!);
           csvText = await response.text();
         }
-        const records = parse(csvText, { skipFirstRow: false });
+        const processedCsv = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false });
         console.log('[Department Store] Total records:', records.length);
 
         if (records.length === 0) {
@@ -519,9 +617,9 @@ Deno.serve(async (req) => {
           const response = await fetch(solarSalesUrl!);
           csvText = await response.text();
         }
-        // Clean CSV to handle malformed quotes
-        const cleanedCsvText = cleanCsvText(csvText);
-        const records = parse(cleanedCsvText, { skipFirstRow: false });
+        // Full preprocessing: BOM removal, separator normalization, quote cleaning
+        const processedCsv = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false });
         console.log('[SolarSales] Total records:', records.length);
 
         if (records.length === 0) {
@@ -597,11 +695,18 @@ Deno.serve(async (req) => {
                 estab_comercial: revenda || null,
               });
 
-              if (!error) {
-                results.solarSales++;
+              if (error) {
+                console.error(`[SolarSales] Insert error row ${i}:`, error.message);
+                results.errors.push(`Solar Sales linha ${i}: ${error.message}`);
               } else {
-                console.error('[SolarSales] Insert error for row', i, ':', error);
+                results.solarSales++;
               }
+            }
+            
+            // Validate insertion count
+            const expectedRows = records.length - 1;
+            if (results.solarSales === 0 && expectedRows > 0) {
+              results.errors.push(`Solar Sales: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
             }
           }
         }
