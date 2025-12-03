@@ -659,7 +659,7 @@ Deno.serve(async (req) => {
                 continue;
               }
 
-              // Parse date (format can be yyyy-mm-dd or dd/mm/yyyy)
+              // Parse date (format can be yyyy-mm-dd, dd/mm/yyyy, or Excel serial number)
               let parsedDate: string;
               if (dataProgramada.includes('-')) {
                 // Format: 2025-11-12
@@ -672,6 +672,23 @@ Deno.serve(async (req) => {
                   continue;
                 }
                 parsedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              } else if (/^[\d.,E+]+$/i.test(dataProgramada)) {
+                // Excel serial number (e.g., 45600, 4.56E+4, 66796E+13)
+                // Excel counts days from 1900-01-01 (with a bug treating 1900 as leap year)
+                const serialNum = parseFloat(dataProgramada.replace(',', '.'));
+                if (serialNum > 0 && serialNum < 100000) {
+                  // Valid Excel serial for dates between 1900-2173
+                  const excelEpoch = new Date(1899, 11, 30); // 30/12/1899 (Excel day 0)
+                  const date = new Date(excelEpoch.getTime() + serialNum * 24 * 60 * 60 * 1000);
+                  const year = date.getFullYear();
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  parsedDate = `${year}-${month}-${day}`;
+                  console.log('[SolarSales] Converted Excel serial', dataProgramada, 'to', parsedDate);
+                } else {
+                  console.log('[SolarSales] Skipping row', i, '- invalid Excel serial:', dataProgramada);
+                  continue;
+                }
               } else {
                 console.log('[SolarSales] Skipping row', i, '- unrecognized date format:', dataProgramada);
                 continue;
