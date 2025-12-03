@@ -67,6 +67,20 @@ function parseBrazilianNumber(value: string): number {
 }
 
 // Utility: Remove BOM from text
+// Utility: Parse CNPJ in Brazilian scientific notation (e.g., 4,70188E+13)
+function parseScientificCnpj(value: string): string {
+  if (!value) return '';
+  // Detect Brazilian scientific notation (e.g., 4,70188E+13 or 4.70188E+13)
+  if (/[eE]/.test(value)) {
+    const normalized = value.replace(',', '.');
+    const num = parseFloat(normalized);
+    if (!isNaN(num) && num > 1e10) {
+      return Math.round(num).toString();
+    }
+  }
+  return value;
+}
+
 function removeBom(text: string): string {
   return text.replace(/^\uFEFF/, '');
 }
@@ -186,10 +200,13 @@ function cleanCsvText(text: string): string {
   return cleanedLines.join('\n');
 }
 
-// Utility: Full CSV preprocessing (BOM removal, separator normalization, quote cleaning)
-function preprocessCsv(text: string): string {
-  const normalized = normalizeCsvSeparator(text);
-  return cleanCsvText(normalized);
+// Utility: Full CSV preprocessing (BOM removal, quote cleaning) - returns text AND detected separator
+function preprocessCsv(text: string): { text: string; separator: string } {
+  const cleanedText = removeBom(text);
+  const separator = detectSeparator(cleanedText);
+  const finalText = cleanCsvText(cleanedText);
+  console.log('[CSV] Using native separator:', separator);
+  return { text: finalText, separator };
 }
 
 Deno.serve(async (req) => {
@@ -241,8 +258,8 @@ Deno.serve(async (req) => {
           const response = await fetch(participantsUrl!);
           csvText = await response.text();
         }
-        const processedCsv = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false });
+        const { text: processedCsv, separator } = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false, separator });
         console.log('[Participants] Total records:', records.length);
 
         // Skip header row manually (start from index 1)
@@ -305,8 +322,8 @@ Deno.serve(async (req) => {
           const response = await fetch(walletUrl!);
           csvText = await response.text();
         }
-        const processedCsv = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false });
+        const { text: processedCsv, separator } = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false, separator });
         console.log('[Wallet] Total records:', records.length);
 
         if (records.length === 0) {
@@ -384,8 +401,8 @@ Deno.serve(async (req) => {
           const response = await fetch(transactionsUrl!);
           csvText = await response.text();
         }
-        const processedCsv = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false });
+        const { text: processedCsv, separator } = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false, separator });
         console.log('[Transactions] Total records:', records.length);
 
         if (records.length === 0) {
@@ -517,8 +534,8 @@ Deno.serve(async (req) => {
           const response = await fetch(departmentStoreUrl!);
           csvText = await response.text();
         }
-        const processedCsv = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false });
+        const { text: processedCsv, separator } = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false, separator });
         console.log('[Department Store] Total records:', records.length);
 
         if (records.length === 0) {
@@ -643,9 +660,9 @@ Deno.serve(async (req) => {
           const response = await fetch(solarSalesUrl!);
           csvText = await response.text();
         }
-        // Full preprocessing: BOM removal, separator normalization, quote cleaning
-        const processedCsv = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false });
+        // Full preprocessing: BOM removal, quote cleaning - uses native separator
+        const { text: processedCsv, separator } = preprocessCsv(csvText);
+        const records = parse(processedCsv, { skipFirstRow: false, separator });
         console.log('[SolarSales] Total records:', records.length);
 
         if (records.length === 0) {
@@ -673,11 +690,13 @@ Deno.serve(async (req) => {
             for (let i = 1; i < records.length; i++) {
               const record = records[i];
               
-              const cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
+              let cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
               const dataProgramada = idxDataProgramada >= 0 ? String(record[idxDataProgramada] || '').trim() : '';
               const valorStr = idxValor >= 0 ? String(record[idxValor] || '0').trim() : '0';
               const revenda = idxRevenda >= 0 ? String(record[idxRevenda] || '').trim() : '';
 
+              // Handle CNPJ in scientific notation (e.g., 4,70188E+13)
+              cnpjRaw = parseScientificCnpj(cnpjRaw);
               const clienteId = normalizeCnpj(cnpjRaw);
 
               if (!clienteId || !dataProgramada) {
