@@ -382,7 +382,8 @@ const Dashboard = () => {
             const clientId = t.cliente_id;
             const valorSolar = Number(t.valor_solar || 0);
             if (valorSolar > 0) {
-              acc[clientId] = (acc[clientId] || 0) + valorSolar;
+              // Não somar - valor_solar já é agregado por cliente na tabela solar_sales
+              acc[clientId] = valorSolar;
             }
             return acc;
           }, {} as Record<string, number>) || {};
@@ -603,7 +604,8 @@ const Dashboard = () => {
             const clientId = t.cliente_id;
             const valorSolar = Number(t.valor_solar || 0);
             if (valorSolar > 0) {
-              acc[clientId] = (acc[clientId] || 0) + valorSolar;
+              // Não somar - valor_solar já é agregado por cliente na tabela solar_sales
+              acc[clientId] = valorSolar;
             }
             return acc;
           }, {} as Record<string, number>) || {};
