@@ -65,6 +65,15 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
       return String(aValue).localeCompare(String(bValue)) * multiplier;
     });
 
+  // Calcular totais
+  const totals = data.reduce((acc, d) => ({
+    total_participantes: acc.total_participantes + d.total_participantes,
+    total_revendas: acc.total_revendas + d.total_revendas,
+    revendas_ativas: acc.revendas_ativas + d.revendas_ativas,
+    revendas_inativas: acc.revendas_inativas + d.revendas_inativas,
+    vendas_totais: acc.vendas_totais + d.vendas_totais,
+  }), { total_participantes: 0, total_revendas: 0, revendas_ativas: 0, revendas_inativas: 0, vendas_totais: 0 });
+
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -175,6 +184,27 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
                   </TableCell>
                 </TableRow>
               ))}
+              {/* Linha de TOTAL */}
+              <TableRow className="bg-muted/50 font-bold border-t-2">
+                <TableCell colSpan={2} className="text-right">
+                  <span className="text-foreground">TOTAL</span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="font-bold">{totals.total_participantes}</span>
+                </TableCell>
+                <TableCell className="text-right font-bold">
+                  {totals.total_revendas}
+                </TableCell>
+                <TableCell className="text-right">
+                  <span className="text-success font-bold">{totals.revendas_ativas}</span>
+                </TableCell>
+                <TableCell className="text-right font-bold text-muted-foreground">
+                  {totals.revendas_inativas}
+                </TableCell>
+                <TableCell className="text-right font-bold text-primary">
+                  {formatCurrency(totals.vendas_totais)}
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </div>

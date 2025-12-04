@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from 'https://deno.land/std@0.203.0/csv/mod.ts';
 import { format, parse as parseDate } from 'https://deno.land/std@0.203.0/datetime/mod.ts';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
+import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,12 +22,81 @@ interface LoadDataRequest {
   solarSalesContent?: string;
 }
 
+// Utility: Detect file format (CSV vs XLSX)
+function detectFileFormat(content: string): 'csv' | 'xlsx' {
+  // Base64 de XLSX começa com UEsDB (PK signature em base64)
+  if (content.startsWith('UEsDB') || content.startsWith('UEs')) {
+    return 'xlsx';
+  }
+  return 'csv';
+}
+
+// Utility: Parse XLSX file from base64 content
+function parseXlsx(base64Content: string): string[][] {
+  try {
+    const binaryString = atob(base64Content);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const workbook = XLSX.read(bytes, { 
+      type: 'array',
+      cellDates: false,  // Don't convert dates automatically
+      cellNF: false,     // Don't apply number formatting
+      raw: false,        // Force string conversion
+    });
+    
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    
+    console.log('[XLSX] Parsing sheet:', sheetName);
+    
+    // Convert to array of arrays, forcing all values to strings
+    const records: string[][] = XLSX.utils.sheet_to_json(sheet, { 
+      header: 1,      // Return as array of arrays
+      raw: false,     // Force strings
+      defval: '',     // Default value for empty cells
+    });
+    
+    console.log('[XLSX] Parsed', records.length, 'rows');
+    return records;
+  } catch (error) {
+    console.error('[XLSX] Parse error:', error);
+    throw new Error(`Erro ao parsear arquivo Excel: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// Utility: Parse content (auto-detect CSV vs XLSX)
+function parseContent(content: string, sourceName: string): { records: string[][], format: string } {
+  const format = detectFileFormat(content);
+  console.log(`[${sourceName}] Detected format: ${format}`);
+  
+  if (format === 'xlsx') {
+    const records = parseXlsx(content);
+    return { records, format: 'xlsx' };
+  } else {
+    // CSV processing
+    const { text: processedCsv, separator } = preprocessCsv(content);
+    const records = parse(processedCsv, { skipFirstRow: false, separator });
+    return { records: records as string[][], format: 'csv' };
+  }
+}
+
 // Utility: Normalize CNPJ to 14 digits (remove non-digits, left-pad with zeros)
 function normalizeCnpj(value: string): string | null {
   if (!value) return null;
   const digits = value.replace(/\D/g, '');
   if (!digits) return null;
-  return digits.padStart(14, '0');
+  
+  const normalized = digits.padStart(14, '0');
+  
+  // Detectar possível perda de precisão (CNPJs terminando em muitos zeros)
+  if (normalized.endsWith('00000000') || normalized.endsWith('0000000')) {
+    console.warn(`[CNPJ Warning] Possível perda de precisão: ${normalized} (original: ${value}). Recomendado usar formato XLSX.`);
+  }
+  
+  return normalized;
 }
 
 // Utility: Find column index by header name (case-insensitive, accent-insensitive, punctuation-insensitive)
@@ -82,7 +152,12 @@ function parseScientificCnpj(value: string): string {
     
     // Pad with zeros if needed, or truncate if too long
     if (fullNumber.length < targetLength) {
-      return fullNumber.padEnd(targetLength, '0');
+      const result = fullNumber.padEnd(targetLength, '0');
+      // Log warning if we're padding with many zeros (indicates precision loss)
+      if (targetLength - fullNumber.length >= 5) {
+        console.warn(`[CNPJ Scientific] Padding with ${targetLength - fullNumber.length} zeros - likely precision loss: ${value} -> ${result}`);
+      }
+      return result;
     }
     return fullNumber.slice(0, targetLength);
   }
@@ -260,16 +335,16 @@ Deno.serve(async (req) => {
     // Load participants data
     if (participantsContent || participantsUrl) {
       try {
-        let csvText: string;
+        let content: string;
         if (participantsContent) {
-          csvText = participantsContent;
+          content = participantsContent;
         } else {
           const response = await fetch(participantsUrl!);
-          csvText = await response.text();
+          content = await response.text();
         }
-        const { text: processedCsv, separator } = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false, separator });
-        console.log('[Participants] Total records:', records.length);
+        
+        const { records, format } = parseContent(content, 'Participants');
+        console.log('[Participants] Total records:', records.length, 'Format:', format);
 
         // Skip header row manually (start from index 1)
         for (let i = 1; i < records.length; i++) {
@@ -326,19 +401,19 @@ Deno.serve(async (req) => {
     // Load wallet data
     if (walletContent || walletUrl) {
       try {
-        let csvText: string;
+        let content: string;
         if (walletContent) {
-          csvText = walletContent;
+          content = walletContent;
         } else {
           const response = await fetch(walletUrl!);
-          csvText = await response.text();
+          content = await response.text();
         }
-        const { text: processedCsv, separator } = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false, separator });
-        console.log('[Wallet] Total records:', records.length);
+        
+        const { records, format } = parseContent(content, 'Wallet');
+        console.log('[Wallet] Total records:', records.length, 'Format:', format);
 
         if (records.length === 0) {
-          results.errors.push('Wallet: CSV vazio');
+          results.errors.push('Wallet: Arquivo vazio');
         } else {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[Wallet] Headers:', headers);
@@ -358,41 +433,45 @@ Deno.serve(async (req) => {
             // Clear existing wallet data only if we have valid columns
             await supabaseClient.from('wallet').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-          // Process data rows (skip header)
-          for (let i = 1; i < records.length; i++) {
-            const record = records[i];
-            const clienteNome = idxClienteNome >= 0 ? String(record[idxClienteNome] || '').trim() : '';
-            const clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
-            const distribuidor = idxDistribuidor >= 0 ? String(record[idxDistribuidor] || '').trim() : '';
-            const participante = idxParticipante >= 0 ? String(record[idxParticipante] || '').trim() : '';
+            // Process data rows (skip header)
+            for (let i = 1; i < records.length; i++) {
+              const record = records[i];
+              const clienteNome = idxClienteNome >= 0 ? String(record[idxClienteNome] || '').trim() : '';
+              let clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
+              const distribuidor = idxDistribuidor >= 0 ? String(record[idxDistribuidor] || '').trim() : '';
+              const participante = idxParticipante >= 0 ? String(record[idxParticipante] || '').trim() : '';
 
-            const clienteId = normalizeCnpj(clienteIdRaw);
+              // Handle scientific notation for CSV
+              if (format === 'csv') {
+                clienteIdRaw = parseScientificCnpj(clienteIdRaw);
+              }
+              const clienteId = normalizeCnpj(clienteIdRaw);
 
-            if (!clienteId || !participante) {
-              console.log('[Wallet] Skipping row', i, '- missing CNPJ or participante');
-              continue;
+              if (!clienteId || !participante) {
+                console.log('[Wallet] Skipping row', i, '- missing CNPJ or participante');
+                continue;
+              }
+
+              const { error } = await supabaseClient.from('wallet').insert({
+                participante,
+                cliente_id: clienteId,
+                cliente_nome: clienteNome,
+                distribuidor: distribuidor || null,
+              });
+
+              if (error) {
+                console.error(`[Wallet] Insert error row ${i}:`, error.message);
+                results.errors.push(`Wallet linha ${i}: ${error.message}`);
+              } else {
+                results.wallet++;
+              }
             }
-
-            const { error } = await supabaseClient.from('wallet').insert({
-              participante,
-              cliente_id: clienteId,
-              cliente_nome: clienteNome,
-              distribuidor: distribuidor || null,
-            });
-
-            if (error) {
-              console.error(`[Wallet] Insert error row ${i}:`, error.message);
-              results.errors.push(`Wallet linha ${i}: ${error.message}`);
-            } else {
-              results.wallet++;
+            
+            // Validate insertion count
+            const expectedRows = records.length - 1;
+            if (results.wallet === 0 && expectedRows > 0) {
+              results.errors.push(`Wallet: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
             }
-          }
-          
-          // Validate insertion count
-          const expectedRows = records.length - 1;
-          if (results.wallet === 0 && expectedRows > 0) {
-            results.errors.push(`Wallet: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
-          }
           }
         }
       } catch (error) {
@@ -405,19 +484,19 @@ Deno.serve(async (req) => {
     // Load transactions data
     if (transactionsContent || transactionsUrl) {
       try {
-        let csvText: string;
+        let content: string;
         if (transactionsContent) {
-          csvText = transactionsContent;
+          content = transactionsContent;
         } else {
           const response = await fetch(transactionsUrl!);
-          csvText = await response.text();
+          content = await response.text();
         }
-        const { text: processedCsv, separator } = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false, separator });
-        console.log('[Transactions] Total records:', records.length);
+        
+        const { records, format } = parseContent(content, 'Transactions');
+        console.log('[Transactions] Total records:', records.length, 'Format:', format);
 
         if (records.length === 0) {
-          results.errors.push('Transactions: CSV vazio');
+          results.errors.push('Transactions: Arquivo vazio');
         } else {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[Transactions] Headers:', headers);
@@ -442,88 +521,92 @@ Deno.serve(async (req) => {
             // Check if we have a dedicated solar sales file
             const hasSolarFile = !!(solarSalesContent || solarSalesUrl);
 
-          // Process data rows (skip header)
-          for (let i = 1; i < records.length; i++) {
-            const record = records[i];
-            const clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
-            const dataTransacao = idxDataTransacao >= 0 ? String(record[idxDataTransacao] || '').trim() : '';
-            const tipoVenda = idxTipoVenda >= 0 ? String(record[idxTipoVenda] || '').trim() : '';
-            const totalParcelaStr = idxTotalParcela >= 0 ? String(record[idxTotalParcela] || '0').trim() : '0';
-            const premiacaoPctStr = idxPremiacaoPct >= 0 ? String(record[idxPremiacaoPct] || '0').trim() : '0';
-            const estabComercial = idxEstabComercial >= 0 ? String(record[idxEstabComercial] || '').trim() : '';
+            // Process data rows (skip header)
+            for (let i = 1; i < records.length; i++) {
+              const record = records[i];
+              let clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
+              const dataTransacao = idxDataTransacao >= 0 ? String(record[idxDataTransacao] || '').trim() : '';
+              const tipoVenda = idxTipoVenda >= 0 ? String(record[idxTipoVenda] || '').trim() : '';
+              const totalParcelaStr = idxTotalParcela >= 0 ? String(record[idxTotalParcela] || '0').trim() : '0';
+              const premiacaoPctStr = idxPremiacaoPct >= 0 ? String(record[idxPremiacaoPct] || '0').trim() : '0';
+              const estabComercial = idxEstabComercial >= 0 ? String(record[idxEstabComercial] || '').trim() : '';
 
-            const clienteId = normalizeCnpj(clienteIdRaw);
-
-            if (!clienteId || !dataTransacao || !tipoVenda) {
-              console.log('[Transactions] Skipping row', i, '- missing CNPJ, date, or tipo');
-              continue;
-            }
-
-            // Skip Energia Solar rows if dedicated file is provided
-            if (hasSolarFile && tipoVenda === 'Energia Solar') {
-              console.log('[Transactions] Skipping Solar row', i, '- dedicated file provided');
-              continue;
-            }
-
-            // Parse date (dd/mm/yyyy format)
-            const [day, month, year] = dataTransacao.split('/');
-            if (!day || !month || !year) {
-              console.log('[Transactions] Skipping row', i, '- invalid date format:', dataTransacao);
-              continue;
-            }
-
-            const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-
-            // Parse total parcela
-            const totalParcelaNum = parseBrazilianNumber(totalParcelaStr);
-
-            // Determine premium percentage
-            let premiacaoPctNorm: number;
-            let premiacaoValor: number;
-
-            // If no premium column exists or value is '0', use default 0.1%
-            if (idxPremiacaoPct === -1 || !premiacaoPctStr || premiacaoPctStr === '0') {
-              premiacaoPctNorm = 0.001; // 0.1% default for Transactions file
-              premiacaoValor = totalParcelaNum * premiacaoPctNorm;
-              console.log(`[Transactions] Using default 0.1% premium`);
-            } else {
-              // Parse premium column if it exists (handle 10, 10%, 0.10%, 0,10%)
-              const hasPercent = premiacaoPctStr.includes('%');
-              const premiacaoPctCleaned = premiacaoPctStr.replace('%', '').replace(',', '.');
-              premiacaoPctNorm = parseFloat(premiacaoPctCleaned) || 0.001;
-              
-              if (hasPercent) {
-                premiacaoPctNorm = premiacaoPctNorm / 100;
-              } else if (premiacaoPctNorm > 1) {
-                premiacaoPctNorm = premiacaoPctNorm / 100;
+              // Handle scientific notation for CSV
+              if (format === 'csv') {
+                clienteIdRaw = parseScientificCnpj(clienteIdRaw);
               }
-              
-              premiacaoValor = totalParcelaNum * premiacaoPctNorm;
-            }
+              const clienteId = normalizeCnpj(clienteIdRaw);
 
-            const { error } = await supabaseClient.from('transactions').insert({
-              cliente_id: clienteId,
-              data_transacao: date,
-              tipo_venda: tipoVenda,
-              total_parcela: totalParcelaNum,
-              premiacao_pct_norm: premiacaoPctNorm,
-              premiacao_valor: premiacaoValor,
-              estab_comercial: estabComercial || null,
-            });
+              if (!clienteId || !dataTransacao || !tipoVenda) {
+                console.log('[Transactions] Skipping row', i, '- missing CNPJ, date, or tipo');
+                continue;
+              }
 
-            if (error) {
-              console.error(`[Transactions] Insert error row ${i}:`, error.message);
-              results.errors.push(`Transactions linha ${i}: ${error.message}`);
-            } else {
-              results.transactions++;
+              // Skip Energia Solar rows if dedicated file is provided
+              if (hasSolarFile && tipoVenda === 'Energia Solar') {
+                console.log('[Transactions] Skipping Solar row', i, '- dedicated file provided');
+                continue;
+              }
+
+              // Parse date (dd/mm/yyyy format)
+              const [day, month, year] = dataTransacao.split('/');
+              if (!day || !month || !year) {
+                console.log('[Transactions] Skipping row', i, '- invalid date format:', dataTransacao);
+                continue;
+              }
+
+              const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+              // Parse total parcela
+              const totalParcelaNum = parseBrazilianNumber(totalParcelaStr);
+
+              // Determine premium percentage
+              let premiacaoPctNorm: number;
+              let premiacaoValor: number;
+
+              // If no premium column exists or value is '0', use default 0.1%
+              if (idxPremiacaoPct === -1 || !premiacaoPctStr || premiacaoPctStr === '0') {
+                premiacaoPctNorm = 0.001; // 0.1% default for Transactions file
+                premiacaoValor = totalParcelaNum * premiacaoPctNorm;
+                console.log(`[Transactions] Using default 0.1% premium`);
+              } else {
+                // Parse premium column if it exists (handle 10, 10%, 0.10%, 0,10%)
+                const hasPercent = premiacaoPctStr.includes('%');
+                const premiacaoPctCleaned = premiacaoPctStr.replace('%', '').replace(',', '.');
+                premiacaoPctNorm = parseFloat(premiacaoPctCleaned) || 0.001;
+                
+                if (hasPercent) {
+                  premiacaoPctNorm = premiacaoPctNorm / 100;
+                } else if (premiacaoPctNorm > 1) {
+                  premiacaoPctNorm = premiacaoPctNorm / 100;
+                }
+                
+                premiacaoValor = totalParcelaNum * premiacaoPctNorm;
+              }
+
+              const { error } = await supabaseClient.from('transactions').insert({
+                cliente_id: clienteId,
+                data_transacao: date,
+                tipo_venda: tipoVenda,
+                total_parcela: totalParcelaNum,
+                premiacao_pct_norm: premiacaoPctNorm,
+                premiacao_valor: premiacaoValor,
+                estab_comercial: estabComercial || null,
+              });
+
+              if (error) {
+                console.error(`[Transactions] Insert error row ${i}:`, error.message);
+                results.errors.push(`Transactions linha ${i}: ${error.message}`);
+              } else {
+                results.transactions++;
+              }
             }
-          }
-          
-          // Validate insertion count
-          const expectedRows = records.length - 1;
-          if (results.transactions === 0 && expectedRows > 0) {
-            results.errors.push(`Transactions: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
-          }
+            
+            // Validate insertion count
+            const expectedRows = records.length - 1;
+            if (results.transactions === 0 && expectedRows > 0) {
+              results.errors.push(`Transactions: Nenhum registro inserido de ${expectedRows} linhas. Verifique o formato do arquivo.`);
+            }
           }
         }
       } catch (error) {
@@ -536,21 +619,21 @@ Deno.serve(async (req) => {
     // Load department store data
     if (departmentStoreContent || departmentStoreUrl) {
       try {
-        let csvText: string;
+        let content: string;
         if (departmentStoreContent) {
           console.log('[Department Store] Using content, length:', departmentStoreContent.length);
-          csvText = departmentStoreContent;
+          content = departmentStoreContent;
         } else {
           console.log('[Department Store] Fetching from URL:', departmentStoreUrl);
           const response = await fetch(departmentStoreUrl!);
-          csvText = await response.text();
+          content = await response.text();
         }
-        const { text: processedCsv, separator } = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false, separator });
-        console.log('[Department Store] Total records:', records.length);
+        
+        const { records, format } = parseContent(content, 'Department Store');
+        console.log('[Department Store] Total records:', records.length, 'Format:', format);
 
         if (records.length === 0) {
-          results.errors.push('Department Store: CSV vazio');
+          results.errors.push('Department Store: Arquivo vazio');
         } else {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[Department Store] Headers:', headers);
@@ -584,10 +667,15 @@ Deno.serve(async (req) => {
           // Process data rows (skip header)
           for (let i = 1; i < records.length; i++) {
             const record = records[i];
-            const clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
+            let clienteIdRaw = idxClienteId >= 0 ? String(record[idxClienteId] || '').trim() : '';
             const cpfRaw = idxCpf >= 0 ? String(record[idxCpf] || '').trim() : '';
             const idExterno = idxIdExterno >= 0 ? String(record[idxIdExterno] || '').trim() : '';
             const nome = idxNome >= 0 ? String(record[idxNome] || '').trim() : '';
+
+            // Handle scientific notation for CSV
+            if (format === 'csv') {
+              clienteIdRaw = parseScientificCnpj(clienteIdRaw);
+            }
 
             // Use CPF as fallback if CNPJ is empty
             const documentoRaw = clienteIdRaw || cpfRaw;
@@ -664,20 +752,19 @@ Deno.serve(async (req) => {
     // Load solar sales data - Aggregate by CNPJ and insert into solar_sales table
     if (solarSalesContent || solarSalesUrl) {
       try {
-        let csvText: string;
+        let content: string;
         if (solarSalesContent) {
-          csvText = solarSalesContent;
+          content = solarSalesContent;
         } else {
           const response = await fetch(solarSalesUrl!);
-          csvText = await response.text();
+          content = await response.text();
         }
-        // Full preprocessing: BOM removal, quote cleaning - uses native separator
-        const { text: processedCsv, separator } = preprocessCsv(csvText);
-        const records = parse(processedCsv, { skipFirstRow: false, separator });
-        console.log('[SolarSales] Total records:', records.length);
+        
+        const { records, format } = parseContent(content, 'SolarSales');
+        console.log('[SolarSales] Total records:', records.length, 'Format:', format);
 
         if (records.length === 0) {
-          results.errors.push('Solar Sales: CSV vazio');
+          results.errors.push('Solar Sales: Arquivo vazio');
         } else {
           const headers = records[0].map((h: any) => String(h).trim());
           console.log('[SolarSales] Headers:', headers);
@@ -707,8 +794,10 @@ Deno.serve(async (req) => {
               let cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
               const valorStr = idxValor >= 0 ? String(record[idxValor] || '0').trim() : '0';
 
-              // Handle CNPJ in scientific notation (e.g., 4,70188E+13)
-              cnpjRaw = parseScientificCnpj(cnpjRaw);
+              // Handle CNPJ in scientific notation (for CSV only)
+              if (format === 'csv') {
+                cnpjRaw = parseScientificCnpj(cnpjRaw);
+              }
               const clienteId = normalizeCnpj(cnpjRaw);
 
               if (!clienteId) {
