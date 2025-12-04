@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { HmacSHA256 } from "https://esm.sh/crypto-js@4.2.0";
+import CryptoJS from "https://esm.sh/crypto-js@4.2.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -92,8 +92,8 @@ serve(async (req) => {
     const [, day, month, year] = match;
     const birthRaw = `${year}-${month}-${day}`;
 
-    // Gerar hash COM BARRAS (DD/MM/AAAA)
-    const birthHash = HmacSHA256(birthDate, '').toString();
+    // Gerar hash SHA256 (mesmo algoritmo usado no login)
+    const birthHash = CryptoJS.SHA256(birthDate).toString();
     const passwordHash = birthHash;
 
     console.log(`[create-admin] Gerando hash para: ${birthDate}`);
