@@ -284,10 +284,26 @@ const Dashboard = () => {
         // Get all unique client IDs
         const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
 
+        // Calcular vendas solares por cliente (valor_solar já é agregado por cliente na tabela solar_sales)
+        const solarSalesByClientForKpi = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          const valorSolar = Number(t.valor_solar || 0);
+          if (valorSolar > 0) {
+            acc[clientId] = valorSolar;
+          }
+          return acc;
+        }, {} as Record<string, number>) || {};
+
         // Calculate KPIs from ALL transactions
         if (transactions && transactions.length > 0) {
           const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
-          const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
+          
+          // Cálculo dinâmico de premiação: solar 0,2% + regular 0,1%
+          const solarValues = Object.values(solarSalesByClientForKpi) as number[];
+          const totalSolarSales = solarValues.reduce((sum, val) => sum + val, 0);
+          const regularSales = vendas - totalSolarSales;
+          const premiacaoAtual = (totalSolarSales * 0.002) + (regularSales * 0.001);
+          
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
           // Calculate estimated award projection until 31/03/2026
@@ -506,10 +522,26 @@ const Dashboard = () => {
         // Get all unique client IDs from participant's wallet
         const allClientIds = Array.from(new Set(departmentStore.map((c: any) => c.cliente_id)));
 
+        // Calcular vendas solares por cliente (valor_solar já é agregado por cliente na tabela solar_sales)
+        const solarSalesByClientForKpi = transactions?.reduce((acc, t) => {
+          const clientId = t.cliente_id;
+          const valorSolar = Number(t.valor_solar || 0);
+          if (valorSolar > 0) {
+            acc[clientId] = valorSolar;
+          }
+          return acc;
+        }, {} as Record<string, number>) || {};
+
         // Calculate KPIs
         if (transactions && transactions.length > 0) {
           const vendas = transactions.reduce((sum, t) => sum + Number(t.total_parcela), 0);
-          const premiacaoAtual = transactions.reduce((sum, t) => sum + Number(t.premiacao_valor), 0);
+          
+          // Cálculo dinâmico de premiação: solar 0,2% + regular 0,1%
+          const solarValues = Object.values(solarSalesByClientForKpi) as number[];
+          const totalSolarSales = solarValues.reduce((sum, val) => sum + val, 0);
+          const regularSales = vendas - totalSolarSales;
+          const premiacaoAtual = (totalSolarSales * 0.002) + (regularSales * 0.001);
+          
           const clientesAtivos = new Set(transactions.map((t) => t.cliente_id)).size;
 
           // Calculate estimated award projection until 31/03/2026
