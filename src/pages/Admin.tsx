@@ -173,11 +173,13 @@ const Admin = () => {
     const newFiles: UploadedFile[] = [];
     
     files.forEach(file => {
-      // Validar extensão
-      if (!file.name.toLowerCase().endsWith('.csv')) {
+      // Validar extensão - aceitar CSV e Excel
+      const validExtensions = ['.csv', '.xlsx', '.xls'];
+      const hasValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+      if (!hasValidExtension) {
         toast({
           title: "Arquivo inválido",
-          description: `${file.name} não é um arquivo CSV`,
+          description: `${file.name} não é um arquivo CSV ou Excel (.xlsx, .xls)`,
           variant: "destructive",
         });
         return;
@@ -295,7 +297,23 @@ const Admin = () => {
     // Ler conteúdo dos arquivos carregados
     for (const uf of uploadedFiles) {
       try {
-        const content = await uf.file.text();
+        let content: string;
+        const isExcel = uf.file.name.toLowerCase().match(/\.xlsx?$/);
+        
+        if (isExcel) {
+          // Ler como ArrayBuffer e converter para base64
+          const buffer = await uf.file.arrayBuffer();
+          const bytes = new Uint8Array(buffer);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          content = btoa(binary);
+        } else {
+          // CSV: ler como texto normal
+          content = await uf.file.text();
+        }
+        
         if (uf.type === 'participants') payload.participantsContent = content;
         if (uf.type === 'wallet') payload.walletContent = content;
         if (uf.type === 'transactions') payload.transactionsContent = content;
@@ -577,17 +595,17 @@ const Admin = () => {
                     id="file-input"
                     type="file"
                     multiple
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                   <div className="space-y-2">
                     <div className="text-4xl">📤</div>
                     <p className="text-sm font-medium">
-                      Arraste arquivos CSV aqui
+                      Arraste arquivos CSV ou Excel aqui
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      ou clique para selecionar
+                      Formatos aceitos: .csv, .xlsx, .xls
                     </p>
                   </div>
                 </div>
