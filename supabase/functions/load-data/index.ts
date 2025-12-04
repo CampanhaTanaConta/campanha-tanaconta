@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parse } from 'https://deno.land/std@0.203.0/csv/mod.ts';
 import { format, parse as parseDate } from 'https://deno.land/std@0.203.0/datetime/mod.ts';
 import CryptoJS from 'https://esm.sh/crypto-js@4.2.0';
-import * as XLSX from 'https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs';
+import * as XLSX from 'https://esm.sh/xlsx@0.18.5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
