@@ -30,6 +30,18 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
     }).format(value);
   };
 
+  const getPercentageColor = (percentage: number) => {
+    if (percentage >= 50) return 'text-success';
+    if (percentage >= 25) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const formatPercentage = (ativas: number, total: number) => {
+    if (total === 0) return { value: '0.0%', color: 'text-destructive' };
+    const pct = (ativas / total) * 100;
+    return { value: `${pct.toFixed(1)}%`, color: getPercentageColor(pct) };
+  };
+
   const getRankingBadge = (position: number) => {
     if (position === 0) {
       return <Badge className="bg-warning text-warning-foreground">🥇 1º Lugar</Badge>;
@@ -138,6 +150,9 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
                 >
                   Inativas {sortField === 'revendas_inativas' && (sortDirection === 'asc' ? '↑' : '↓')}
                 </TableHead>
+                <TableHead className="text-right">
+                  % Ativas
+                </TableHead>
                 <TableHead 
                   className="cursor-pointer hover:bg-muted/50 text-right"
                   onClick={() => handleSort('vendas_totais')}
@@ -179,6 +194,12 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
                   <TableCell className="text-right text-muted-foreground">
                     {distributor.revendas_inativas}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {(() => {
+                      const pct = formatPercentage(distributor.revendas_ativas, distributor.total_revendas);
+                      return <span className={`font-medium ${pct.color}`}>{pct.value}</span>;
+                    })()}
+                  </TableCell>
                   <TableCell className="text-right font-bold text-primary">
                     {formatCurrency(distributor.vendas_totais)}
                   </TableCell>
@@ -200,6 +221,12 @@ export const DistributorsTable = ({ data }: DistributorsTableProps) => {
                 </TableCell>
                 <TableCell className="text-right font-bold text-muted-foreground">
                   {totals.revendas_inativas}
+                </TableCell>
+                <TableCell className="text-right">
+                  {(() => {
+                    const pct = formatPercentage(totals.revendas_ativas, totals.total_revendas);
+                    return <span className={`font-bold ${pct.color}`}>{pct.value}</span>;
+                  })()}
                 </TableCell>
                 <TableCell className="text-right font-bold text-primary">
                   {formatCurrency(totals.vendas_totais)}
