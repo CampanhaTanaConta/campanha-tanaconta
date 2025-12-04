@@ -794,11 +794,15 @@ Deno.serve(async (req) => {
               let cnpjRaw = idxCnpj >= 0 ? String(record[idxCnpj] || '').trim() : '';
               const valorStr = idxValor >= 0 ? String(record[idxValor] || '0').trim() : '0';
 
-              // Handle CNPJ in scientific notation (for CSV only)
-              if (format === 'csv') {
-                cnpjRaw = parseScientificCnpj(cnpjRaw);
-              }
+              // Handle CNPJ in scientific notation (for CSV AND XLSX)
+              // XLSX can also lose precision if cell is formatted as number
+              cnpjRaw = parseScientificCnpj(cnpjRaw);
               const clienteId = normalizeCnpj(cnpjRaw);
+              
+              // Warn if CNPJ might be truncated (ends with many zeros)
+              if (clienteId && (clienteId.endsWith('00000000') || clienteId.endsWith('0000000'))) {
+                console.warn(`[SolarSales] CNPJ possivelmente truncado: ${clienteId} (raw: ${cnpjRaw})`);
+              }
 
               if (!clienteId) {
                 console.log('[SolarSales] Skipping row', i, '- missing CNPJ');
