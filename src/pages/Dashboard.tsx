@@ -99,6 +99,7 @@ const Dashboard = () => {
   });
   const [adminParticipantsData, setAdminParticipantsData] = useState<any[]>([]);
   const [adminDistributorsData, setAdminDistributorsData] = useState<any[]>([]);
+  const [unregisteredConsultants, setUnregisteredConsultants] = useState<string[]>([]);
 
   useEffect(() => {
     if (!participante) {
@@ -199,6 +200,7 @@ const Dashboard = () => {
         const adminData = data as any;
         setAdminParticipantsData(adminData?.participants || []);
         setAdminDistributorsData(adminData?.distributors || []);
+        setUnregisteredConsultants(adminData?.unregistered_consultants || []);
       } else {
         // Call unified RPC that fetches all data with proper session context
         const { data, error } = await supabase
@@ -1005,6 +1007,35 @@ const Dashboard = () => {
 
             <ParticipantsOverviewTable data={adminParticipantsData} />
           </div>
+        )}
+
+        {/* Card de consultores não inscritos - apenas admin */}
+        {isAdmin && unregisteredConsultants.length > 0 && (
+          <Card className="border-warning/50 bg-warning/5 shadow-lg">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-lg font-semibold text-foreground">
+                  ⚠️ Consultores que têm carteira e ainda não se inscreveram na campanha
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground mt-1">
+                  {unregisteredConsultants.length} consultor{unregisteredConsultants.length > 1 ? 'es' : ''} com revendas na carteira mas sem cadastro na campanha
+                </CardDescription>
+              </div>
+              <Users className="h-6 w-6 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {unregisteredConsultants.map((name, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-warning/20 text-foreground rounded-full text-sm font-medium border border-warning/30"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {kpis.clientesAtivos > 0 && (
