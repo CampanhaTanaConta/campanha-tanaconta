@@ -128,10 +128,18 @@ function getIndex(headers: string[], candidates: string[]): number {
   return -1;
 }
 
-// Utility: Parse Brazilian number format (1.234,56 -> 1234.56)
-function parseBrazilianNumber(value: string): number {
+// Utility: Parse number format - handles both Brazilian CSV (1.234,56) and XLSX (1234.56)
+function parseBrazilianNumber(value: string, isXlsx: boolean = false): number {
   if (!value) return 0;
-  // Remove dots (thousands separator) and replace comma with dot
+  
+  // XLSX already returns values in American format (dot as decimal)
+  if (isXlsx) {
+    // Only remove formatting characters (R$, spaces, thousand commas)
+    const cleaned = value.replace(/[R$\s]/g, '').replace(',', '');
+    return parseFloat(cleaned) || 0;
+  }
+  
+  // CSV Brazilian format: comma as decimal, dot as thousands separator
   const cleaned = value.replace(/\./g, '').replace(',', '.');
   return parseFloat(cleaned) || 0;
 }
@@ -557,8 +565,8 @@ Deno.serve(async (req) => {
 
               const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
-              // Parse total parcela
-              const totalParcelaNum = parseBrazilianNumber(totalParcelaStr);
+              // Parse total parcela (use isXlsx to handle format correctly)
+              const totalParcelaNum = parseBrazilianNumber(totalParcelaStr, format === 'xlsx');
 
               // Determine premium percentage
               let premiacaoPctNorm: number;
@@ -812,8 +820,8 @@ Deno.serve(async (req) => {
               // Count each valid line processed
               solarLinesProcessed++;
 
-              // Parse value (Brazilian format)
-              const valor = parseBrazilianNumber(valorStr);
+              // Parse value (use isXlsx to handle format correctly)
+              const valor = parseBrazilianNumber(valorStr, format === 'xlsx');
               
               // Aggregate by CNPJ
               const current = solarByClient.get(clienteId) || 0;
