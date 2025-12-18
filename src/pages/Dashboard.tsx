@@ -428,8 +428,7 @@ const Dashboard = () => {
               estab_comercial: estabComercialByClient[client.cliente_id] || client.nome,
               totalVendas: salesByClient[client.cliente_id] || 0,
             }))
-            .sort((a, b) => b.totalVendas - a.totalVendas)
-            .slice(0, 10); // Top 10 pending clients
+            .sort((a, b) => b.totalVendas - a.totalVendas);
 
           // Get activated clients details with monthly breakdown (Admin view - no wallet info available)
           const activatedClientsList = departmentStore
@@ -687,8 +686,7 @@ const Dashboard = () => {
                 outros_participantes: walletInfo?.outros_participantes
               };
             })
-            .sort((a, b) => b.totalVendas - a.totalVendas)
-            .slice(0, 10); // Top 10 pending clients
+            .sort((a, b) => b.totalVendas - a.totalVendas);
 
           // Get activated clients details with monthly breakdown
           const activatedClientsList = departmentStore

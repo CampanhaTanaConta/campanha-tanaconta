@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Phone, Mail, MapPin, Users } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PendingClient {
   cliente_id: string;
@@ -66,7 +66,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
             Todas as revendas estão ativadas! 🎉
           </p>
         ) : (
-          <div className="rounded-md border">
+          <ScrollArea className="h-[500px] rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -132,7 +132,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>
