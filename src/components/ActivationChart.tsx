@@ -99,8 +99,11 @@ export const ActivationChart = ({
                       fontSize={12}
                       fontWeight={600}
                     >
-                      <tspan x={x} dy={0}>{`${(percent * 100).toFixed(0)}%`}</tspan>
-                      <tspan x={x} dy={14} fontSize={10}>
+                      <tspan x={x} dy={-8}>{`${(percent * 100).toFixed(0)}%`}</tspan>
+                      <tspan x={x} dy={14} fontSize={11} fontWeight={700}>
+                        {pieData[index].value} revendas
+                      </tspan>
+                      <tspan x={x} dy={12} fontSize={9}>
                         {formatCurrency(pieData[index].total)}
                       </tspan>
                     </text>

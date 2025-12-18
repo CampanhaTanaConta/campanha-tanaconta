@@ -66,7 +66,7 @@ export const PendingClientsTable = ({ clients }: PendingClientsTableProps) => {
             Todas as revendas estão ativadas! 🎉
           </p>
         ) : (
-          <ScrollArea className="h-[500px] rounded-md border">
+          <ScrollArea className="h-[500px] rounded-md border" type="always">
             <Table>
               <TableHeader>
                 <TableRow>
